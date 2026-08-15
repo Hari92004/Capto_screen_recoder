@@ -1,0 +1,115 @@
+{
+  "name": "capto-screen-recorder",
+  "version": "1.0.0",
+  "description": "Cross-platform Free & Open-Source Screen Recorder for Windows, macOS & Linux with Glassmorphism UI, Dual Mode, Free Noise Removal, Brightness Control & Silence Trimming",
+  "main": "main.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Hari92004/Capto_screen_recoder.git"
+  },
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
+    "dist:linux": "electron-builder --linux",
+    "dist:all": "electron-builder -wml",
+    "pack": "electron-builder --dir"
+  },
+  "keywords": [
+    "capto",
+    "screen-recorder",
+    "webcam-recorder",
+    "cross-platform",
+    "windows",
+    "macos",
+    "linux",
+    "open-source",
+    "electron",
+    "noise-suppression",
+    "silence-removal",
+    "brightness-control",
+    "glassmorphism"
+  ],
+  "author": "Hari",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.capto.screenrecorder",
+    "productName": "Capto Screen Recorder",
+    "copyright": "Copyright © 2026 Hari",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "src/assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Capto Screen Recorder"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64", "universal"]
+        },
+        {
+          "target": "zip",
+          "arch": ["universal"]
+        }
+      ],
+      "category": "public.app-category.video",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "deb",
+          "arch": ["x64"]
+        },
+        {
+          "target": "tar.gz",
+          "arch": ["x64"]
+        }
+      ],
+      "category": "AudioVideo;Recorder;",
+      "maintainer": "Hari"
+    }
+  }
+}

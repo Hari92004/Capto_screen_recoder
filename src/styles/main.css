@@ -1,0 +1,656 @@
+/* ==========================================================================
+   CAPTO SCREEN RECORDER - PURE iPHONE LIQUID GLASS UI (iOS HIG)
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* iOS Dark Obsidian Palette */
+  --ios-bg: #07090e;
+  --ios-glass-surface: rgba(18, 22, 32, 0.88);
+  --ios-glass-card: rgba(30, 36, 50, 0.6);
+  --ios-glass-card-hover: rgba(45, 54, 75, 0.8);
+  --ios-glass-border: rgba(255, 255, 255, 0.12);
+
+  /* iOS Accents */
+  --ios-blue: #0A84FF;
+  --ios-indigo: #5E5CE6;
+  --ios-green: #30D158;
+  --ios-red: #FF453A;
+  --ios-orange: #FF9F0A;
+
+  /* Typography */
+  --text-primary: #FFFFFF;
+  --text-secondary: rgba(235, 235, 245, 0.75);
+  --text-tertiary: rgba(235, 235, 245, 0.45);
+
+  --ios-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --ios-blur: blur(36px) saturate(190%);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+html, body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+  background: transparent !important;
+  background-color: rgba(0, 0, 0, 0) !important;
+  color: var(--text-primary);
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  display: flex;
+}
+
+/* Ambient Backlight Removed so zero side leakage occurs */
+.ambient-glow {
+  display: none !important;
+}
+
+/* iPhone App Window fills exact bounds with crisp rounded corners */
+.app-window {
+  width: 100%;
+  height: 100%;
+  background: var(--ios-glass-surface);
+  backdrop-filter: var(--ios-blur);
+  -webkit-backdrop-filter: var(--ios-blur);
+  border: 1px solid var(--ios-glass-border);
+  border-radius: 20px;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Titlebar */
+.window-titlebar {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  -webkit-app-region: drag;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.brand-container {
+  display: flex;
+  align-items: center;
+}
+
+/* Dynamic Island Header */
+.dynamic-island-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ios-green);
+  box-shadow: 0 0 8px var(--ios-green);
+}
+
+/* Header Segmented Pill (Studio vs Library) */
+.ios-pill-tabs {
+  display: flex;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 3px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  -webkit-app-region: no-drag;
+}
+
+.pill-tab {
+  padding: 5px 14px;
+  border-radius: 11px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s var(--ios-spring);
+}
+
+.pill-tab.active {
+  background: rgba(255, 255, 255, 0.16);
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Standard Clean Window Controls on the Right */
+.standard-window-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  -webkit-app-region: no-drag;
+}
+
+.norm-win-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.norm-win-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+}
+
+.norm-win-btn.close:hover {
+  background: #FF453A;
+  color: white;
+}
+
+/* Content Viewport */
+.app-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  gap: 14px;
+  overflow-y: auto;
+}
+
+.app-body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.app-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+/* 1. iOS Camera Mode Selector Cards */
+.mode-selector-carousel {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.mode-item {
+  background: var(--ios-glass-card);
+  border: 1px solid var(--ios-glass-border);
+  border-radius: 18px;
+  padding: 12px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.25s var(--ios-spring);
+  text-align: center;
+}
+
+.mode-item:hover {
+  background: var(--ios-glass-card-hover);
+  transform: translateY(-2px);
+}
+
+.mode-item.active {
+  background: linear-gradient(135deg, rgba(10, 132, 255, 0.3), rgba(94, 92, 230, 0.25));
+  border-color: var(--ios-blue);
+  box-shadow: 0 4px 18px rgba(10, 132, 255, 0.3);
+}
+
+.mode-emoji {
+  font-size: 22px;
+  margin-bottom: 4px;
+}
+
+.mode-text {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* 2. Live Preview Screen */
+.ios-preview-screen {
+  background: #000000;
+  border: 1.5px solid var(--ios-glass-border);
+  border-radius: 20px;
+  height: 230px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+.ios-preview-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: filter 0.1s ease;
+}
+
+/* Floating Audio Badge inside Preview */
+.preview-audio-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.audio-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ios-green);
+  box-shadow: 0 0 6px var(--ios-green);
+  transition: transform 0.1s ease;
+}
+
+.preview-mini-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 10px;
+}
+
+.mini-bar {
+  width: 2.5px;
+  height: 3px;
+  background: var(--ios-green);
+  border-radius: 2px;
+  transition: height 0.08s ease;
+}
+
+/* PiP Floating Camera in Preview */
+.pip-cam-preview {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 75px;
+  height: 75px;
+  border-radius: 50%;
+  border: 2px solid var(--ios-blue);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  transition: all 0.3s var(--ios-spring);
+}
+
+.pip-cam-preview.shape-circle { border-radius: 50%; width: 75px; height: 75px; }
+.pip-cam-preview.shape-rounded { border-radius: 14px; width: 90px; height: 65px; }
+.pip-cam-preview.shape-rect { border-radius: 6px; width: 100px; height: 60px; }
+
+.pip-cam-preview video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+  transition: filter 0.1s ease;
+}
+
+/* Region Selection Prompt */
+.region-action-bar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(10, 132, 255, 0.15);
+  border: 1px solid rgba(10, 132, 255, 0.3);
+  padding: 8px 14px;
+  border-radius: 14px;
+  font-size: 11px;
+}
+
+/* 3. Big iPhone Recording Shutter Section */
+.shutter-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 4px 0;
+}
+
+.btn-iphone-rec {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #FF453A 0%, #D70015 100%);
+  color: white;
+  border: none;
+  padding: 12px 36px;
+  border-radius: 36px;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  box-shadow: 
+    0 8px 26px rgba(255, 69, 58, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transition: all 0.2s var(--ios-spring);
+}
+
+.btn-iphone-rec:hover {
+  transform: scale(1.04);
+  box-shadow: 0 10px 32px rgba(255, 69, 58, 0.7);
+}
+
+.rec-white-ring {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 0 8px white;
+}
+
+.timer-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 14px;
+  border-radius: 20px;
+}
+
+/* 4. Quick iOS Control Center Settings Group */
+.ios-settings-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ios-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ios-row-column {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.row-label {
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.row-sub {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  margin-top: 1px;
+}
+
+.mic-status-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ios-green);
+  background: rgba(48, 209, 88, 0.15);
+  border: 1px solid rgba(48, 209, 88, 0.3);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+/* Real-Time Audio Level VU Meter & Equalizer */
+.audio-visualizer-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.vu-meter-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.vu-meter-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #30D158 0%, #FFD60A 70%, #FF453A 95%);
+  border-radius: 4px;
+  box-shadow: 0 0 10px rgba(48, 209, 88, 0.5);
+  transition: width 0.06s ease;
+}
+
+.equalizer-bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 14px;
+  padding: 0 2px;
+}
+
+.eq-bar {
+  width: 4px;
+  height: 3px;
+  background: rgba(48, 209, 88, 0.4);
+  border-radius: 2px;
+  transition: height 0.06s ease, background-color 0.06s ease;
+}
+
+/* iOS Select Dropdown */
+.ios-select {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ios-select:hover {
+  background: rgba(0, 0, 0, 0.6);
+  border-color: rgba(10, 132, 255, 0.5);
+}
+
+.ios-select option {
+  background: #141822;
+  color: white;
+}
+
+/* iOS Slider */
+.ios-slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 5px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  outline: none;
+}
+
+.ios-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  transition: transform 0.15s ease;
+}
+
+.ios-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* iOS Switch */
+.ios-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 26px;
+  cursor: pointer;
+}
+
+.ios-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider-round {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 26px;
+  transition: all 0.3s var(--ios-spring);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.slider-round:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  border-radius: 50%;
+  transition: all 0.3s var(--ios-spring);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+input:checked + .slider-round {
+  background-color: var(--ios-green);
+}
+
+input:checked + .slider-round:before {
+  transform: translateX(18px);
+}
+
+/* Shape Switcher Segmented Buttons */
+.shape-segment-group {
+  display: flex;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 12px;
+  padding: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.shape-opt-btn {
+  padding: 4px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.shape-opt-btn.active {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+/* Glass Action Button */
+.glass-action-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Gallery View */
+.gallery-view {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+}
+
+.gallery-view.active {
+  display: flex;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.recording-card {
+  background: var(--ios-glass-card);
+  border: 1px solid var(--ios-glass-border);
+  border-radius: 16px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.recording-thumb {
+  width: 100%;
+  height: 100px;
+  background: #000;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+}
+
+.recording-thumb video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}

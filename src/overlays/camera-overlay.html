@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Capto — Floating Camera</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    html, body {
+      background: transparent !important;
+      background-color: rgba(0, 0, 0, 0) !important;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      margin: 0;
+    }
+
+    .cam-container {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+      background: transparent;
+      border: none;
+      -webkit-app-region: drag;
+      cursor: grab;
+      transition: border-radius 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .cam-container:active {
+      cursor: grabbing;
+    }
+
+    /* Perfect Edge Masking (Zero Square Outer Leak) */
+    .cam-container.shape-circle {
+      border-radius: 50%;
+      -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 99.5%, transparent 100%);
+      mask-image: radial-gradient(circle at 50% 50%, #000 99.5%, transparent 100%);
+    }
+
+    .cam-container.shape-rounded {
+      border-radius: 26px;
+    }
+
+    .cam-container.shape-rect {
+      border-radius: 12px;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+      pointer-events: none;
+      border-radius: inherit;
+      transition: filter 0.1s ease;
+      display: block;
+    }
+
+    /* Hover Controls */
+    .cam-hover-controls {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      display: flex;
+      gap: 4px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      -webkit-app-region: no-drag;
+      z-index: 10;
+    }
+
+    .cam-container:hover .cam-hover-controls {
+      opacity: 1;
+    }
+
+    .mini-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+
+    .mini-btn:hover {
+      transform: scale(1.15);
+      background: rgba(255, 255, 255, 0.25);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="cam-container shape-circle" id="cam-container">
+    <video id="camera-feed" autoplay muted playsinline></video>
+    
+    <div class="cam-hover-controls">
+      <button class="mini-btn" id="btn-cycle-shape" title="Switch Shape (Circle/Rounded/Square)">🔄</button>
+      <button class="mini-btn" id="btn-close-cam" title="Hide Overlay">✖</button>
+    </div>
+  </div>
+
+  <script>
+    const container = document.getElementById('cam-container');
+    const video = document.getElementById('camera-feed');
+    const btnCycleShape = document.getElementById('btn-cycle-shape');
+    const btnCloseCam = document.getElementById('btn-close-cam');
+
+    const shapes = ['circle', 'rounded', 'rect'];
+    let currentShapeIndex = 0;
+    let currentStream = null;
+
+    async function initCamera(deviceId = '') {
+      try {
+        if (currentStream) {
+          currentStream.getTracks().forEach(t => t.stop());
+        }
+        const constraints = deviceId
+          ? { deviceId: { exact: deviceId }, width: 1280, height: 720 }
+          : { width: 1280, height: 720 };
+
+        currentStream = await navigator.mediaDevices.getUserMedia({
+          video: constraints,
+          audio: false
+        });
+        video.srcObject = currentStream;
+      } catch (err) {
+        console.error('Webcam error:', err);
+      }
+    }
+
+    function setShape(shape) {
+      container.className = `cam-container shape-${shape}`;
+    }
+
+    btnCycleShape.addEventListener('click', (e) => {
+      e.stopPropagation();
+      currentShapeIndex = (currentShapeIndex + 1) % shapes.length;
+      const nextShape = shapes[currentShapeIndex];
+      setShape(nextShape);
+      if (window.electronAPI) {
+        window.electronAPI.setCameraShape(nextShape);
+      }
+    });
+
+    btnCloseCam.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (window.electronAPI) {
+        window.electronAPI.closeCameraOverlay();
+      }
+    });
+
+    if (window.electronAPI) {
+      window.electronAPI.onInitCamSettings(({ shape, deviceId }) => {
+        if (shape) setShape(shape);
+        initCamera(deviceId || '');
+      });
+
+      window.electronAPI.onUpdateCamSettings(({ shape, deviceId }) => {
+        if (shape) setShape(shape);
+        if (deviceId) initCamera(deviceId);
+      });
+
+      window.electronAPI.onUpdateCamShape((shape) => {
+        if (shape) setShape(shape);
+      });
+
+      window.electronAPI.onUpdateCamBrightness((val) => {
+        video.style.filter = `brightness(${val}%)`;
+      });
+    } else {
+      initCamera();
+    }
+  </script>
+</body>
+</html>

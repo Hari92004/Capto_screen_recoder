@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fligo — Region Selector</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background: rgba(0, 0, 0, 0.4);
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      cursor: crosshair;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* Top Instruction Banner */
+    .instruction-bar {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 20, 30, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 8px 20px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 9999;
+    }
+
+    .key-badge {
+      background: rgba(255, 255, 255, 0.15);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+    }
+
+    /* Selection Box */
+    #selection-box {
+      position: absolute;
+      border: 2px solid #0A84FF;
+      background: rgba(10, 132, 255, 0.08);
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55), 0 0 20px rgba(10, 132, 255, 0.4);
+      display: none;
+      pointer-events: none;
+    }
+
+    /* Dimension Badge */
+    #dimension-badge {
+      position: absolute;
+      top: -32px;
+      left: 0;
+      background: #0A84FF;
+      color: white;
+      font-family: monospace;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 6px;
+      white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="instruction-bar">
+    <span>📐 Click & Drag to select recording area</span>
+    <span class="key-badge">ESC to Cancel</span>
+  </div>
+
+  <div id="selection-box">
+    <div id="dimension-badge">0 × 0</div>
+  </div>
+
+  <script>
+    let isSelecting = false;
+    let startX = 0;
+    let startY = 0;
+
+    const box = document.getElementById('selection-box');
+    const badge = document.getElementById('dimension-badge');
+
+    window.addEventListener('mousedown', (e) => {
+      isSelecting = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      box.style.left = startX + 'px';
+      box.style.top = startY + 'px';
+      box.style.width = '0px';
+      box.style.height = '0px';
+      box.style.display = 'block';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isSelecting) return;
+
+      const currentX = e.clientX;
+      const currentY = e.clientY;
+
+      const width = Math.abs(currentX - startX);
+      const height = Math.abs(currentY - startY);
+      const left = Math.min(startX, currentX);
+      const top = Math.min(startY, currentY);
+
+      box.style.left = left + 'px';
+      box.style.top = top + 'px';
+      box.style.width = width + 'px';
+      box.style.height = height + 'px';
+
+      badge.textContent = `${width} × ${height} px`;
+    });
+
+    window.addEventListener('mouseup', (e) => {
+      if (!isSelecting) return;
+      isSelecting = false;
+
+      const currentX = e.clientX;
+      const currentY = e.clientY;
+      const width = Math.abs(currentX - startX);
+      const height = Math.abs(currentY - startY);
+      const left = Math.min(startX, currentX);
+      const top = Math.min(startY, currentY);
+
+      if (width > 50 && height > 50) {
+        if (window.electronAPI) {
+          window.electronAPI.sendRegionSelected({
+            x: Math.round(left * window.devicePixelRatio),
+            y: Math.round(top * window.devicePixelRatio),
+            width: Math.round(width * window.devicePixelRatio),
+            height: Math.round(height * window.devicePixelRatio)
+          });
+        }
+      }
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (window.electronAPI) {
+          window.electronAPI.cancelRegionSelector();
+        }
+      }
+    });
+  </script>
+</body>
+</html>

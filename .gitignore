@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build Outputs & Packaging
+dist/
+build/
+out/
+
+# Recordings Output
+Videos/
+*.webm
+*.mp4
+*.wav
+
+# OS / IDE metadata
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log

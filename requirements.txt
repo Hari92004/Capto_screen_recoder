@@ -1,0 +1,90 @@
+================================================================================
+                    FLIGO - SOFTWARE REQUIREMENTS SPECIFICATION (SRS)
+                     Free & Open-Source Screen Recorder for PC
+================================================================================
+
+1. PROJECT OVERVIEW
+--------------------------------------------------------------------------------
+Project Name   : Fligo Screen Recorder
+Platform       : Windows 10 / 11 (PC)
+License        : Free & Open-Source (GPL / MIT)
+Category       : Screen Capture, Video & Audio Recording Software
+Goal           : Provide a 100% free, lightweight, high-performance screen recorder 
+                 with no watermarks, time limits, or paywalled features.
+
+
+2. CORE FUNCTIONAL REQUIREMENTS
+--------------------------------------------------------------------------------
+
+[1] CUSTOMISABLE SCREEN REGION SELECTOR (WITH SYSTEM AUDIO)
+    - Full Screen Recording (Single or Multi-monitor selection).
+    - Custom Area Selection: Interactive drag-and-drop bounding box to select
+      any rectangular portion of the screen.
+    - Specific Application/Window Capture mode.
+    - Preset Aspect Ratios: 16:9 (YouTube), 9:16 (Shorts/Reels), 1:1, 4:3.
+    - Synchronized System Sound Capture (WASAPI loopback audio).
+    - Resolution Support: 720p, 1080p (Full HD), 2K, and 4K.
+    - Frame Rates: 30 FPS, 60 FPS, or customizable frame rates.
+
+[2] SOUND RECORDER (NOISE & SILENCE REMOVAL)
+    - Dual Audio Stream Recording:
+        * System Audio (Internal PC sounds, media, games)
+        * Microphone Audio (Narrator voice)
+    - Free Real-Time Noise Suppression:
+        * Deep learning / DSP filter (RNNoise / spectral gate) to eliminate 
+          fan noise, AC hum, keyboard clicks, and background hiss for free.
+    - Automatic Silence Removal:
+        * Auto-detect silence periods (< -40dB for > 1 sec).
+        * Option to auto-pause recording or trim silent pauses automatically.
+    - Real-time visual audio level meters (VU meter) and gain booster.
+    - Audio formats export: MP3, WAV, AAC.
+
+[3] WEBCAM RECORDER (STANDALONE MODE)
+    - High-definition camera capture from connected webcams or capture cards.
+    - Resolution support up to 1080p / 4K @ 60 FPS.
+    - Live video preview with horizontal flip/mirroring controls.
+    - Bound noise-cancelled microphone track.
+
+[4] DUAL MODE (SCREEN + WEBCAM RECORDER)
+    - Picture-in-Picture (PiP) simultaneous recording of screen + camera.
+    - Floating & Movable Webcam Overlay:
+        * Webcam box stays on top and is freely draggable anywhere on the screen 
+          in real-time during recording.
+    - Dynamic Shape Customization:
+        * Circle Frame (Modern avatar style)
+        * Rounded Rectangle
+        * Classic 16:9 Rectangle
+    - Resizable Webcam Window:
+        * Smooth resize slider / corner dragging (Small, Medium, Large, Custom).
+        * Optional border stroke, shadow, or outline customization.
+    - Unified Audio Engine:
+        * Real-time noise suppression & silence trimming applied to the combined 
+          narrator voice and screen sound.
+
+
+3. USER INTERFACE & CONTROLS
+--------------------------------------------------------------------------------
+- Minimalist floating toolbar with Start, Pause, Resume, Stop, and Snapshot.
+- Global Hotkey Shortcuts:
+    * F9  : Start / Stop Recording
+    * F10 : Pause / Resume Recording
+    * F11 : Toggle Webcam Overlay (Show/Hide)
+- System Tray integration for background operation and quick access.
+- Countdown timer before recording starts (3, 2, 1).
+
+
+4. OUTPUT & EXPORT SETTINGS
+--------------------------------------------------------------------------------
+- Output Video Formats : MP4 (H.264 / AAC), MKV (crash-safe), WebM, GIF.
+- Video Quality Presets: High, Medium, Low (Custom Bitrate option).
+- Hardware Acceleration: NVENC (NVIDIA), Intel QuickSync, AMD AMF.
+- Local Storage Only   : 100% private, offline, zero data tracking or cloud uploads.
+
+
+5. DEVELOPMENT PHASES
+--------------------------------------------------------------------------------
+- Phase 1 : Screen Region Selector & Core Capture Engine.
+- Phase 2 : WASAPI Audio Mixer + Free RNNoise & Silence Detection Engine.
+- Phase 3 : Webcam Overlay, Drag-and-Drop Controller, & Shape Masking (Circle/Rect).
+- Phase 4 : Hotkeys, UI Polish, Packaging (.exe installer), & Open-Source Release.
+================================================================================
