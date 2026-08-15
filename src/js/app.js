@@ -592,12 +592,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Recorder State Callback
   window.fligoRecorder.onRecordingStateChange = (state) => {
     if (state === 'recording') {
-      btnRecordLabel.textContent = 'STOP REC';
+      btnRecordLabel.textContent = 'STOP RECORDING';
       statusText.textContent = 'RECORDING';
       statusDot.style.background = '#FF453A';
       statusDot.style.boxShadow = '0 0 10px #FF453A';
     } else {
-      btnRecordLabel.textContent = 'REC SCREEN';
+      btnRecordLabel.textContent = 'START RECORDING';
       statusText.textContent = 'CAPTO STUDIO';
       statusDot.style.background = '#30D158';
       statusDot.style.boxShadow = '0 0 8px #30D158';

@@ -145,14 +145,22 @@ class CaptoRecorder {
         await this.startCamera();
       }
 
-      // Audio DSP Pipeline
+      // Audio DSP Pipeline (Safe Invocation)
       let processedAudioStream = null;
-      if (window.fligoAudioEngine) {
-        processedAudioStream = await window.fligoAudioEngine.buildAudioStream(
-          micStream,
-          systemAudioStream
-        );
-      } else {
+      try {
+        if (window.fligoAudioEngine) {
+          if (typeof window.fligoAudioEngine.buildAudioStream === 'function') {
+            processedAudioStream = await window.fligoAudioEngine.buildAudioStream(micStream, systemAudioStream);
+          } else if (typeof window.fligoAudioEngine.init === 'function') {
+            processedAudioStream = await window.fligoAudioEngine.init(micStream, systemAudioStream);
+          } else {
+            processedAudioStream = micStream;
+          }
+        } else {
+          processedAudioStream = micStream;
+        }
+      } catch (audioErr) {
+        console.warn('Audio DSP init fallback to raw mic:', audioErr);
         processedAudioStream = micStream;
       }
 
@@ -169,7 +177,7 @@ class CaptoRecorder {
         this.cropVideoElement.srcObject = this.screenStream;
         this.cropVideoElement.play().catch(() => {});
 
-        const screenTrack = this.screenStream.getVideoTracks()[0];
+        const screenTrack = this.screenStream ? this.screenStream.getVideoTracks()[0] : null;
         const settings = screenTrack && screenTrack.getSettings ? screenTrack.getSettings() : {};
         const nativeW = settings.width || window.screen.width * (window.devicePixelRatio || 1);
         const nativeH = settings.height || window.screen.height * (window.devicePixelRatio || 1);

@@ -36,6 +36,10 @@ class FligoAudioEngine {
     this.rafId = null;
   }
 
+  async buildAudioStream(micStream, systemStream = null) {
+    return this.init(micStream, systemStream);
+  }
+
   async init(micStream, systemStream = null) {
     if (this.audioCtx) {
       await this.close();
