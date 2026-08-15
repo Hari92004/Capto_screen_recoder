@@ -15,8 +15,10 @@ let regionSelectorWindow = null;
 let cameraOverlayWindow = null;
 let toolbarWindow = null;
 
-// App Icon Path
-const appIconPath = path.join(__dirname, 'src', 'assets', 'icon.png');
+// App Icon Path (Multi-resolution ICO for Windows, PNG for others)
+const icoPath = path.join(__dirname, 'src', 'assets', 'icon.ico');
+const pngPath = path.join(__dirname, 'src', 'assets', 'icon.png');
+const appIconPath = (process.platform === 'win32' && fs.existsSync(icoPath)) ? icoPath : pngPath;
 const appIcon = fs.existsSync(appIconPath) ? nativeImage.createFromPath(appIconPath) : null;
 
 // Target Saved Folder: "Screen Recordings" in Videos
@@ -140,7 +142,7 @@ function openCameraOverlay(shape = 'circle', size = 190, deviceId = '') {
   });
 }
 
-// Floating Dynamic Island Recording Toolbar (Exact Tight Bounds / Zero Background Leak)
+// Floating Dynamic Island Recording Toolbar
 function openToolbar() {
   if (toolbarWindow) {
     toolbarWindow.show();
@@ -257,21 +259,20 @@ ipcMain.on('window-close', () => {
   if (mainWindow) mainWindow.close();
 });
 
-// Automatic Minimize on Recording Start
+// Auto-Hide Main Window Completely on Recording Start
 ipcMain.on('recording-started', () => {
   if (mainWindow) {
-    mainWindow.minimize();
+    mainWindow.hide(); // Instantly hides the dashboard from screen so it never blocks your desktop!
   }
   openToolbar();
 });
 
-// Restore Window on Recording Stop
+// Auto-Restore Window on Recording Stop
 ipcMain.on('recording-stopped', () => {
   if (toolbarWindow) {
     toolbarWindow.close();
   }
   if (mainWindow) {
-    mainWindow.restore();
     mainWindow.show();
     mainWindow.focus();
   }
@@ -339,7 +340,10 @@ ipcMain.on('hide-toolbar', () => {
 
 ipcMain.on('toolbar-action', (event, action) => {
   if (mainWindow) {
-    mainWindow.webContents.send('from-toolbar', action);
+    mainWindow.webContents.send('fromtoolbar', action);
+    if (action === 'stop' && window.fligoRecorder) {
+      window.fligoRecorder.stopRecording();
+    }
   }
 });
 
