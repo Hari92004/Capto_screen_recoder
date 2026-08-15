@@ -35,14 +35,14 @@ if (!fs.existsSync(recordingsDir)) {
 
 function createMainWindow() {
   mainWindow = new BrowserWindow({
-    width: 680,
-    height: 760,
-    minWidth: 540,
-    minHeight: 640,
+    width: 640,
+    height: 740,
     frame: false,
     transparent: true,
     backgroundColor: '#00000000',
     hasShadow: false,
+    resizable: false, // Fixed sleek studio dimensions - prevents window stretch/distortion
+    maximizable: false,
     icon: appIcon || appIconPath,
     titleBarStyle: 'hidden',
     webPreferences: {
