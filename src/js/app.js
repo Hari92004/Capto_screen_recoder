@@ -1,6 +1,6 @@
 /**
- * CAPTO APP CONTROLLER (iPhone Liquid Glass Experience)
- * Device Enumeration, Fail-Safe Audio Hotplug, Natural Mirror Webcam, Mic Mute & VU Visualizer
+ * CAPTO APP CONTROLLER
+ * Device Enumeration, Fail-Safe Audio Hotplug, Webcam Mirroring, Strict Camera Killing & VU Visualizer
  */
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -333,8 +333,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     selectedCamId = e.target.value;
     window.fligoRecorder.setCameraDeviceId(selectedCamId);
     if (window.fligoRecorder.currentMode === 'dual' || window.fligoRecorder.currentMode === 'camera') {
-      await window.fligoRecorder.stopCamera();
+      await stopCameraFeeds();
       const newCamStream = await window.fligoRecorder.startCamera(selectedCamId);
+      currentCamStream = newCamStream;
       if (newCamStream) {
         if (window.fligoRecorder.currentMode === 'camera') {
           previewVideo.srcObject = newCamStream;
@@ -344,6 +345,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
   });
+
+  // Strict Camera Feed Killer helper
+  async function stopCameraFeeds() {
+    if (currentCamStream) {
+      currentCamStream.getTracks().forEach(t => t.stop());
+      currentCamStream = null;
+    }
+    if (pipCameraVideo) {
+      pipCameraVideo.srcObject = null;
+    }
+    await window.fligoRecorder.stopCamera();
+    if (window.electronAPI) {
+      window.electronAPI.closeCameraOverlay();
+    }
+  }
 
   // Face Camera Brightness Controller
   if (sliderBrightness) {
@@ -399,16 +415,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       updateCamControlsState(true);
 
       if (previewVideo) {
-        previewVideo.style.transform = 'scaleX(-1)'; // Natural Mirrored Webcam view
+        previewVideo.style.transform = 'scaleX(-1)'; // Mirrored Selfie View
         previewVideo.style.filter = `brightness(${sliderBrightness ? sliderBrightness.value : 100}%)`;
       }
 
+      await stopCameraFeeds();
       currentCamStream = await window.fligoRecorder.startCamera(selectedCamId);
       if (currentCamStream) {
         previewVideo.srcObject = currentCamStream;
         previewVideo.play().catch(() => {});
       }
-      if (window.electronAPI) window.electronAPI.closeCameraOverlay();
     } else if (mode === 'dual') {
       pipCameraBox.style.display = 'block';
       regionActionBar.style.display = 'none';
@@ -417,7 +433,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (previewVideo) {
         previewVideo.style.filter = 'none';
-        previewVideo.style.transform = 'none'; // Screen is 100% standard (never flipped)
+        previewVideo.style.transform = 'none'; // Screen is never flipped!
       }
       if (pipCameraVideo) {
         pipCameraVideo.style.filter = `brightness(${sliderBrightness ? sliderBrightness.value : 100}%)`;
@@ -430,6 +446,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         previewVideo.play().catch(() => {});
       }
 
+      await stopCameraFeeds();
       currentCamStream = await window.fligoRecorder.startCamera(selectedCamId);
       if (currentCamStream) {
         pipCameraVideo.srcObject = currentCamStream;
@@ -439,7 +456,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (window.electronAPI) {
         window.electronAPI.openCameraOverlay({
           shape: window.fligoRecorder.cameraShape,
-          size: window.fligoRecorder.cameraSize
+          size: window.fligoRecorder.cameraSize,
+          deviceId: selectedCamId
         });
       }
     } else if (mode === 'region') {
@@ -453,8 +471,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         previewVideo.style.transform = 'none';
       }
 
-      await window.fligoRecorder.stopCamera();
-      if (window.electronAPI) window.electronAPI.closeCameraOverlay();
+      // Hard stop any camera feeds immediately
+      await stopCameraFeeds();
 
       currentScreenStream = await window.fligoRecorder.startScreenStream();
       if (currentScreenStream) {
@@ -477,8 +495,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         previewVideo.style.transform = 'none';
       }
 
-      await window.fligoRecorder.stopCamera();
-      if (window.electronAPI) window.electronAPI.closeCameraOverlay();
+      // Hard stop any camera feeds immediately
+      await stopCameraFeeds();
 
       currentScreenStream = await window.fligoRecorder.startScreenStream();
       if (currentScreenStream) {
