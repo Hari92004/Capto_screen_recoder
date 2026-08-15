@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fligo — Region Selector</title>
+  <title>Capto — Region Selector</title>
   <style>
     * {
       box-sizing: border-box;
@@ -27,7 +27,7 @@
       top: 24px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(15, 20, 30, 0.85);
+      background: rgba(15, 20, 30, 0.9);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.2);
@@ -41,6 +41,7 @@
       align-items: center;
       gap: 12px;
       z-index: 9999;
+      pointer-events: none;
     }
 
     .key-badge {
@@ -74,6 +75,7 @@
       border-radius: 6px;
       white-space: nowrap;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      pointer-events: none;
     }
   </style>
 </head>
@@ -81,7 +83,7 @@
 
   <div class="instruction-bar">
     <span>📐 Click & Drag to select recording area</span>
-    <span class="key-badge">ESC to Cancel</span>
+    <span class="key-badge">ESC / Click to Cancel</span>
   </div>
 
   <div id="selection-box">
@@ -137,7 +139,7 @@
       const left = Math.min(startX, currentX);
       const top = Math.min(startY, currentY);
 
-      if (width > 50 && height > 50) {
+      if (width > 40 && height > 40) {
         if (window.electronAPI) {
           window.electronAPI.sendRegionSelected({
             x: Math.round(left * window.devicePixelRatio),
@@ -145,6 +147,11 @@
             width: Math.round(width * window.devicePixelRatio),
             height: Math.round(height * window.devicePixelRatio)
           });
+        }
+      } else {
+        // If user just clicked without dragging, cancel and close immediately!
+        if (window.electronAPI) {
+          window.electronAPI.cancelRegionSelector();
         }
       }
     });

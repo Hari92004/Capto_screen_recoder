@@ -19,6 +19,7 @@
       height: 100vh;
       overflow: hidden;
       display: flex;
+      pointer-events: none !important;
       font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
     }
 
@@ -33,7 +34,7 @@
         0 0 16px rgba(10, 132, 255, 0.35);
       position: relative;
       animation: dash-pulse 2.5s infinite linear;
-      pointer-events: none;
+      pointer-events: none !important;
     }
 
     @keyframes dash-pulse {
@@ -51,7 +52,7 @@
       }
     }
 
-    /* Draggable Top Title Bar */
+    /* Top Title Bar */
     .crop-top-bar {
       position: absolute;
       top: -30px;
@@ -62,9 +63,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 0 4px;
-      -webkit-app-region: drag;
-      cursor: move;
-      pointer-events: auto;
+      pointer-events: none !important;
     }
 
     .crop-area-badge {
@@ -83,6 +82,7 @@
       align-items: center;
       gap: 6px;
       border: 1px solid rgba(255, 255, 255, 0.2);
+      pointer-events: none !important;
     }
 
     .rec-pulse-dot {
@@ -107,6 +107,7 @@
       padding: 2px 8px;
       border-radius: 4px;
       border: 1px solid rgba(255, 255, 255, 0.1);
+      pointer-events: none !important;
     }
 
     /* 4 Corner Crop Brackets */
@@ -116,7 +117,7 @@
       height: 16px;
       border-color: #FFFFFF;
       border-style: solid;
-      pointer-events: none;
+      pointer-events: none !important;
       z-index: 5;
     }
 
@@ -124,63 +125,18 @@
     .top-right { top: -2px; right: -2px; border-width: 3px 3px 0 0; border-top-right-radius: 6px; }
     .bottom-left { bottom: -2px; left: -2px; border-width: 0 0 3px 3px; border-bottom-left-radius: 6px; }
     .bottom-right { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; border-bottom-right-radius: 6px; }
-
-    /* Interactive Resize Handles */
-    .handle {
-      position: absolute;
-      background: transparent;
-      z-index: 10;
-      -webkit-app-region: no-drag;
-      pointer-events: auto;
-    }
-
-    .handle-nw { top: -6px; left: -6px; width: 22px; height: 22px; cursor: nwse-resize; }
-    .handle-ne { top: -6px; right: -6px; width: 22px; height: 22px; cursor: nesw-resize; }
-    .handle-sw { bottom: -6px; left: -6px; width: 22px; height: 22px; cursor: nesw-resize; }
-    .handle-se { bottom: -6px; right: -6px; width: 22px; height: 22px; cursor: nwse-resize; }
-
-    .handle-n { top: -6px; left: 22px; right: 22px; height: 12px; cursor: ns-resize; }
-    .handle-s { bottom: -6px; left: 22px; right: 22px; height: 12px; cursor: ns-resize; }
-    .handle-w { left: -6px; top: 22px; bottom: 22px; width: 12px; cursor: ew-resize; }
-    .handle-e { right: -6px; top: 22px; bottom: 22px; width: 12px; cursor: ew-resize; }
-
-    /* Visual Indicator Pips */
-    .pip {
-      position: absolute;
-      width: 8px;
-      height: 8px;
-      background: #0A84FF;
-      border: 2px solid white;
-      border-radius: 50%;
-      box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
-      pointer-events: none;
-      z-index: 6;
-    }
-
-    .pip-n { top: -4px; left: calc(50% - 4px); }
-    .pip-s { bottom: -4px; left: calc(50% - 4px); }
-    .pip-w { left: -4px; top: calc(50% - 4px); }
-    .pip-e { right: -4px; top: calc(50% - 4px); }
-
-    /* When Recording is Active */
-    body.recording .handle,
-    body.recording .crop-top-bar,
-    body.recording .pip {
-      pointer-events: none !important;
-      display: none !important;
-    }
   </style>
 </head>
 <body>
 
   <div class="crop-border-frame">
-    <!-- Draggable Header -->
+    <!-- Header -->
     <div class="crop-top-bar" id="crop-top-bar">
       <div class="crop-area-badge">
         <span class="rec-pulse-dot"></span>
         <span id="badge-dim">CROP AREA</span>
       </div>
-      <span class="hint-tag" id="hint-tag">Drag bar to move • Drag edges to resize</span>
+      <span class="hint-tag" id="hint-tag">Selected Area (Click anywhere freely)</span>
     </div>
 
     <!-- Visual Corner Brackets -->
@@ -188,110 +144,13 @@
     <div class="corner top-right"></div>
     <div class="corner bottom-left"></div>
     <div class="corner bottom-right"></div>
-
-    <!-- Visual Center Pips -->
-    <div class="pip pip-n"></div>
-    <div class="pip pip-s"></div>
-    <div class="pip pip-w"></div>
-    <div class="pip pip-e"></div>
-
-    <!-- Interactive Resize Handles -->
-    <div class="handle handle-nw" data-handle="nw"></div>
-    <div class="handle handle-ne" data-handle="ne"></div>
-    <div class="handle handle-sw" data-handle="sw"></div>
-    <div class="handle handle-se" data-handle="se"></div>
-
-    <div class="handle handle-n" data-handle="n"></div>
-    <div class="handle handle-s" data-handle="s"></div>
-    <div class="handle handle-w" data-handle="w"></div>
-    <div class="handle handle-e" data-handle="e"></div>
   </div>
 
   <script>
-    let isDraggingHandle = false;
-    let currentHandle = null;
-    let startMouseX = 0;
-    let startMouseY = 0;
-
-    const handles = document.querySelectorAll('.handle');
-    const topBar = document.getElementById('crop-top-bar');
     const badge = document.getElementById('badge-dim');
-    const hintTag = document.getElementById('hint-tag');
-
-    // Dynamic mouse event pass-through
-    window.addEventListener('mousemove', (e) => {
-      if (document.body.classList.contains('recording')) return;
-
-      if (isDraggingHandle) {
-        const deltaX = e.screenX - startMouseX;
-        const deltaY = e.screenY - startMouseY;
-        startMouseX = e.screenX;
-        startMouseY = e.screenY;
-
-        if (window.electronAPI && window.electronAPI.updateCropBounds) {
-          window.electronAPI.updateCropBounds({
-            handle: currentHandle,
-            deltaX: deltaX,
-            deltaY: deltaY
-          });
-        }
-        return;
-      }
-
-      // Check if mouse is over interactive handles or top bar
-      const isOverInteractive = e.target.classList.contains('handle') || 
-                                e.target.closest('#crop-top-bar') !== null;
-
-      if (window.electronAPI && window.electronAPI.setCropMouseEvents) {
-        if (isOverInteractive) {
-          window.electronAPI.setCropMouseEvents(false); // Enable mouse click on handles
-        } else {
-          window.electronAPI.setCropMouseEvents(true, true); // Pass clicks to underlying apps!
-        }
-      }
-    });
-
-    // Handle interactive resizing
-    handles.forEach(h => {
-      h.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        isDraggingHandle = true;
-        currentHandle = h.getAttribute('data-handle');
-        startMouseX = e.screenX;
-        startMouseY = e.screenY;
-        if (window.electronAPI && window.electronAPI.setCropMouseEvents) {
-          window.electronAPI.setCropMouseEvents(false);
-        }
-      });
-    });
-
-    window.addEventListener('mouseup', () => {
-      if (isDraggingHandle) {
-        isDraggingHandle = false;
-        currentHandle = null;
-        if (window.electronAPI && window.electronAPI.setCropMouseEvents) {
-          window.electronAPI.setCropMouseEvents(true, true);
-        }
-      }
-    });
-
     if (window.electronAPI) {
       window.electronAPI.onSyncCropDimensions((dimStr) => {
         if (badge && dimStr) badge.textContent = dimStr;
-      });
-
-      window.electronAPI.onLockCropBorder(() => {
-        document.body.classList.add('recording');
-        if (hintTag) hintTag.textContent = 'RECORDING ACTIVE';
-        if (window.electronAPI.setCropMouseEvents) {
-          window.electronAPI.setCropMouseEvents(true, true);
-        }
-      });
-
-      window.electronAPI.onUnlockCropBorder(() => {
-        document.body.classList.remove('recording');
-        if (hintTag) hintTag.textContent = 'Drag bar to move • Drag edges to resize';
       });
     }
   </script>

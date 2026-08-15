@@ -66,16 +66,22 @@ function createMainWindow() {
     mainWindow = null;
     if (cameraOverlayWindow) cameraOverlayWindow.close();
     if (toolbarWindow) toolbarWindow.close();
-    if (regionSelectorWindow) regionSelectorWindow.close();
-    if (cropBorderWindow) cropBorderWindow.close();
+    if (regionSelectorWindow) {
+      regionSelectorWindow.destroy();
+      regionSelectorWindow = null;
+    }
+    if (cropBorderWindow) {
+      cropBorderWindow.destroy();
+      cropBorderWindow = null;
+    }
   });
 }
 
 // Transparent Region Selection Window
 function openRegionSelector() {
   if (regionSelectorWindow) {
-    regionSelectorWindow.show();
-    return;
+    regionSelectorWindow.destroy();
+    regionSelectorWindow = null;
   }
 
   const primaryDisplay = screen.getPrimaryDisplay();
@@ -107,7 +113,7 @@ function openRegionSelector() {
   });
 }
 
-// Persistent Interactive Dotted Border Outline for Custom Crop Area
+// Persistent Visual Dotted Border Outline for Custom Crop Area (100% Click-Through)
 function showCropBorder(region) {
   const primaryDisplay = screen.getPrimaryDisplay();
   const scale = primaryDisplay.scaleFactor || 1;
@@ -125,11 +131,8 @@ function showCropBorder(region) {
       height: dipHeight
     });
     cropBorderWindow.show();
-    try {
-      cropBorderWindow.setIgnoreMouseEvents(true, { forward: true });
-    } catch (e) {}
+    cropBorderWindow.setIgnoreMouseEvents(true); // 100% Guaranteed pass-through!
     cropBorderWindow.webContents.send('sync-crop-dimensions', `${region.width} × ${region.height} px`);
-    cropBorderWindow.webContents.send('unlock-crop-border');
     return;
   }
 
@@ -144,7 +147,7 @@ function showCropBorder(region) {
     alwaysOnTop: true,
     hasShadow: false,
     skipTaskbar: true,
-    resizable: true,
+    resizable: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -153,7 +156,7 @@ function showCropBorder(region) {
   });
 
   try {
-    cropBorderWindow.setIgnoreMouseEvents(true, { forward: true }); // Default pass-through to underlying apps!
+    cropBorderWindow.setIgnoreMouseEvents(true); // 100% Guaranteed pass-through to all apps!
     cropBorderWindow.setContentProtection(true); // Invisible in final recorded video!
   } catch (e) {}
 
@@ -163,22 +166,6 @@ function showCropBorder(region) {
     cropBorderWindow.webContents.send('sync-crop-dimensions', `${region.width} × ${region.height} px`);
   });
 
-  // Track window move from dragging title bar
-  cropBorderWindow.on('moved', () => {
-    if (!cropBorderWindow) return;
-    const bounds = cropBorderWindow.getBounds();
-    const primary = screen.getPrimaryDisplay();
-    const currentScale = primary.scaleFactor || 1;
-    const updatedRegion = {
-      x: Math.round(bounds.x * currentScale),
-      y: Math.round(bounds.y * currentScale),
-      width: Math.round(bounds.width * currentScale),
-      height: Math.round(bounds.height * currentScale)
-    };
-    if (mainWindow) mainWindow.webContents.send('on-region-selected', updatedRegion);
-    cropBorderWindow.webContents.send('sync-crop-dimensions', `${updatedRegion.width} × ${updatedRegion.height} px`);
-  });
-
   cropBorderWindow.on('closed', () => {
     cropBorderWindow = null;
   });
@@ -186,7 +173,9 @@ function showCropBorder(region) {
 
 function hideCropBorder() {
   if (cropBorderWindow) {
-    cropBorderWindow.close();
+    try {
+      cropBorderWindow.destroy();
+    } catch (e) {}
     cropBorderWindow = null;
   }
 }
@@ -350,16 +339,10 @@ ipcMain.on('window-close', () => {
   if (mainWindow) mainWindow.close();
 });
 
-// Auto-Hide Main Window Completely on Recording Start & Lock Crop Handles
+// Auto-Hide Main Window Completely on Recording Start
 ipcMain.on('recording-started', () => {
   if (mainWindow) {
     mainWindow.hide();
-  }
-  if (cropBorderWindow) {
-    try {
-      cropBorderWindow.webContents.send('lock-crop-border');
-      cropBorderWindow.setIgnoreMouseEvents(true, { forward: false }); // Locked pass-through
-    } catch (e) {}
   }
   openToolbar();
 });
@@ -383,7 +366,10 @@ ipcMain.on('open-region-selector', () => {
 
 ipcMain.on('region-selected', (event, region) => {
   if (regionSelectorWindow) {
-    regionSelectorWindow.close();
+    try {
+      regionSelectorWindow.destroy();
+    } catch (e) {}
+    regionSelectorWindow = null;
   }
   showCropBorder(region);
   if (mainWindow) {
@@ -393,7 +379,10 @@ ipcMain.on('region-selected', (event, region) => {
 
 ipcMain.on('cancel-region-selector', () => {
   if (regionSelectorWindow) {
-    regionSelectorWindow.close();
+    try {
+      regionSelectorWindow.destroy();
+    } catch (e) {}
+    regionSelectorWindow = null;
   }
 });
 
@@ -406,88 +395,6 @@ ipcMain.on('hide-crop-border', () => {
   hideCropBorder();
 });
 
-// Dynamic Crop Mouse Events
-ipcMain.on('set-crop-mouse-events', (event, { ignore, forward }) => {
-  if (cropBorderWindow) {
-    try {
-      cropBorderWindow.setIgnoreMouseEvents(ignore, { forward: !!forward });
-    } catch (e) {}
-  }
-});
-
-// Interactive Resize Handling
-ipcMain.on('update-crop-bounds', (event, { handle, deltaX, deltaY }) => {
-  if (!cropBorderWindow) return;
-
-  const bounds = cropBorderWindow.getBounds();
-  let { x, y, width, height } = bounds;
-  const minW = 120;
-  const minH = 90;
-
-  switch (handle) {
-    case 'se':
-      width = Math.max(minW, width + deltaX);
-      height = Math.max(minH, height + deltaY);
-      break;
-    case 'e':
-      width = Math.max(minW, width + deltaX);
-      break;
-    case 's':
-      height = Math.max(minH, height + deltaY);
-      break;
-    case 'sw':
-      if (width - deltaX >= minW) {
-        width -= deltaX;
-        x += deltaX;
-      }
-      height = Math.max(minH, height + deltaY);
-      break;
-    case 'w':
-      if (width - deltaX >= minW) {
-        width -= deltaX;
-        x += deltaX;
-      }
-      break;
-    case 'nw':
-      if (width - deltaX >= minW) {
-        width -= deltaX;
-        x += deltaX;
-      }
-      if (height - deltaY >= minH) {
-        height -= deltaY;
-        y += deltaY;
-      }
-      break;
-    case 'n':
-      if (height - deltaY >= minH) {
-        height -= deltaY;
-        y += deltaY;
-      }
-      break;
-    case 'ne':
-      width = Math.max(minW, width + deltaX);
-      if (height - deltaY >= minH) {
-        height -= deltaY;
-        y += deltaY;
-      }
-      break;
-  }
-
-  cropBorderWindow.setBounds({ x, y, width, height });
-
-  const primary = screen.getPrimaryDisplay();
-  const currentScale = primary.scaleFactor || 1;
-  const updatedRegion = {
-    x: Math.round(x * currentScale),
-    y: Math.round(y * currentScale),
-    width: Math.round(width * currentScale),
-    height: Math.round(height * currentScale)
-  };
-
-  if (mainWindow) mainWindow.webContents.send('on-region-selected', updatedRegion);
-  cropBorderWindow.webContents.send('sync-crop-dimensions', `${updatedRegion.width} × ${updatedRegion.height} px`);
-});
-
 // Camera Overlay Controls
 ipcMain.on('open-camera-overlay', (event, { shape, size, deviceId }) => {
   openCameraOverlay(shape, size, deviceId);
@@ -497,8 +404,8 @@ ipcMain.on('close-camera-overlay', () => {
   if (cameraOverlayWindow) {
     try {
       cameraOverlayWindow.webContents.send('stop-cam-feed');
+      cameraOverlayWindow.destroy();
     } catch (e) {}
-    cameraOverlayWindow.close();
     cameraOverlayWindow = null;
   }
 });
@@ -528,7 +435,10 @@ ipcMain.on('show-toolbar', () => {
 
 ipcMain.on('hide-toolbar', () => {
   if (toolbarWindow) {
-    toolbarWindow.close();
+    try {
+      toolbarWindow.destroy();
+    } catch (e) {}
+    toolbarWindow = null;
   }
 });
 
