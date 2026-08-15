@@ -134,132 +134,142 @@ class CaptoRecorder {
   async startRecording(micStream, systemAudioStream) {
     if (this.isRecording) return;
 
-    if (!this.screenStream && this.currentMode !== 'camera') {
-      await this.startScreenStream();
-    }
-    if ((this.currentMode === 'dual' || this.currentMode === 'camera') && !this.cameraStream) {
-      await this.startCamera();
-    }
-
-    // Audio DSP Pipeline
-    let processedAudioStream = null;
-    if (window.fligoAudioEngine) {
-      processedAudioStream = await window.fligoAudioEngine.buildAudioStream(
-        micStream,
-        systemAudioStream
-      );
-    } else {
-      processedAudioStream = micStream;
-    }
-
-    const isRegion = this.currentMode === 'region' && this.selectedRegion;
-    let videoTrack = null;
-
-    if (isRegion) {
-      if (!this.cropVideoElement) {
-        this.cropVideoElement = document.createElement('video');
-        this.cropVideoElement.muted = true;
-        this.cropVideoElement.autoplay = true;
-        this.cropVideoElement.playsInline = true;
+    try {
+      if (!this.screenStream || this.screenStream.getVideoTracks().length === 0 || this.screenStream.getVideoTracks()[0].readyState === 'ended') {
+        if (this.currentMode !== 'camera') {
+          await this.startScreenStream();
+        }
       }
-      this.cropVideoElement.srcObject = this.screenStream;
-      await this.cropVideoElement.play().catch(() => {});
 
-      const screenTrack = this.screenStream.getVideoTracks()[0];
-      const settings = screenTrack && screenTrack.getSettings ? screenTrack.getSettings() : {};
-      const nativeW = settings.width || window.screen.width * (window.devicePixelRatio || 1);
-      const nativeH = settings.height || window.screen.height * (window.devicePixelRatio || 1);
+      if ((this.currentMode === 'dual' || this.currentMode === 'camera') && (!this.cameraStream || this.cameraStream.getVideoTracks().length === 0 || this.cameraStream.getVideoTracks()[0].readyState === 'ended')) {
+        await this.startCamera();
+      }
 
-      const outWidth = Math.max(2, Math.round(this.selectedRegion.width));
-      const outHeight = Math.max(2, Math.round(this.selectedRegion.height));
-      this.canvas.width = outWidth;
-      this.canvas.height = outHeight;
+      // Audio DSP Pipeline
+      let processedAudioStream = null;
+      if (window.fligoAudioEngine) {
+        processedAudioStream = await window.fligoAudioEngine.buildAudioStream(
+          micStream,
+          systemAudioStream
+        );
+      } else {
+        processedAudioStream = micStream;
+      }
 
-      const rx = Math.max(0, Math.min(nativeW - outWidth, Math.round(this.selectedRegion.x)));
-      const ry = Math.max(0, Math.min(nativeH - outHeight, Math.round(this.selectedRegion.y)));
+      const isRegion = this.currentMode === 'region' && this.selectedRegion;
+      let videoTrack = null;
 
-      const drawFrame = () => {
-        if (!this.isRecording) return;
-        try {
-          if (this.cropVideoElement && this.cropVideoElement.readyState >= 2) {
-            this.ctx.drawImage(
-              this.cropVideoElement,
-              rx, ry, outWidth, outHeight,
-              0, 0, outWidth, outHeight
-            );
-          }
-        } catch (e) {}
+      if (isRegion) {
+        if (!this.cropVideoElement) {
+          this.cropVideoElement = document.createElement('video');
+          this.cropVideoElement.muted = true;
+          this.cropVideoElement.autoplay = true;
+          this.cropVideoElement.playsInline = true;
+        }
+        this.cropVideoElement.srcObject = this.screenStream;
+        this.cropVideoElement.play().catch(() => {});
+
+        const screenTrack = this.screenStream.getVideoTracks()[0];
+        const settings = screenTrack && screenTrack.getSettings ? screenTrack.getSettings() : {};
+        const nativeW = settings.width || window.screen.width * (window.devicePixelRatio || 1);
+        const nativeH = settings.height || window.screen.height * (window.devicePixelRatio || 1);
+
+        const outWidth = Math.max(2, Math.round(this.selectedRegion.width));
+        const outHeight = Math.max(2, Math.round(this.selectedRegion.height));
+        this.canvas.width = outWidth;
+        this.canvas.height = outHeight;
+
+        const rx = Math.max(0, Math.min(nativeW - outWidth, Math.round(this.selectedRegion.x)));
+        const ry = Math.max(0, Math.min(nativeH - outHeight, Math.round(this.selectedRegion.y)));
+
+        const drawFrame = () => {
+          if (!this.isRecording) return;
+          try {
+            if (this.cropVideoElement && this.cropVideoElement.readyState >= 2) {
+              this.ctx.drawImage(
+                this.cropVideoElement,
+                rx, ry, outWidth, outHeight,
+                0, 0, outWidth, outHeight
+              );
+            }
+          } catch (e) {}
+        };
+
+        drawFrame();
+
+        if (this.compositorIntervalId) clearInterval(this.compositorIntervalId);
+        this.compositorIntervalId = setInterval(drawFrame, 1000 / 60);
+
+        const canvasStream = this.canvas.captureStream(60);
+        videoTrack = canvasStream.getVideoTracks()[0];
+      } else if (this.currentMode === 'camera') {
+        videoTrack = this.cameraStream ? this.cameraStream.getVideoTracks()[0] : null;
+      } else {
+        videoTrack = this.screenStream ? this.screenStream.getVideoTracks()[0] : null;
+      }
+
+      if (!videoTrack) {
+        console.error('No video track available to record');
+        return;
+      }
+
+      const combinedTracks = [videoTrack];
+      if (processedAudioStream && processedAudioStream.getAudioTracks().length > 0) {
+        combinedTracks.push(...processedAudioStream.getAudioTracks());
+      }
+
+      const finalStream = new MediaStream(combinedTracks);
+      this.recordedChunks = [];
+
+      const codecs = [
+        'video/webm;codecs=vp8,opus',
+        'video/webm;codecs=h264,opus',
+        'video/webm',
+        'video/mp4'
+      ];
+
+      let chosenMime = '';
+      for (const c of codecs) {
+        if (MediaRecorder.isTypeSupported(c)) {
+          chosenMime = c;
+          break;
+        }
+      }
+      if (!chosenMime) chosenMime = 'video/webm';
+      this.selectedMimeType = chosenMime;
+
+      this.mediaRecorder = new MediaRecorder(finalStream, {
+        mimeType: chosenMime,
+        videoBitsPerSecond: 8000000
+      });
+
+      this.mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          this.recordedChunks.push(event.data);
+        }
       };
 
-      // Draw initial frame immediately
-      drawFrame();
+      this.mediaRecorder.onstop = async () => {
+        await this.saveRecordingFile();
+      };
 
-      // Reliable 60FPS tick that never throttles when main window is hidden
-      if (this.compositorIntervalId) clearInterval(this.compositorIntervalId);
-      this.compositorIntervalId = setInterval(drawFrame, 1000 / 60);
+      this.mediaRecorder.start(1000);
+      this.isRecording = true;
+      this.isPaused = false;
+      this.recordingStartTime = Date.now();
+      this.elapsedSeconds = 0;
 
-      const canvasStream = this.canvas.captureStream(60);
-      videoTrack = canvasStream.getVideoTracks()[0];
-    } else if (this.currentMode === 'camera') {
-      videoTrack = this.cameraStream.getVideoTracks()[0];
-    } else {
-      videoTrack = this.screenStream.getVideoTracks()[0];
-    }
+      this.startTimer();
 
-    const combinedTracks = [videoTrack];
-    if (processedAudioStream && processedAudioStream.getAudioTracks().length > 0) {
-      combinedTracks.push(...processedAudioStream.getAudioTracks());
-    }
-
-    const finalStream = new MediaStream(combinedTracks);
-    this.recordedChunks = [];
-
-    const codecs = [
-      'video/webm;codecs=vp8,opus',
-      'video/webm;codecs=h264,opus',
-      'video/webm',
-      'video/mp4'
-    ];
-
-    let chosenMime = '';
-    for (const c of codecs) {
-      if (MediaRecorder.isTypeSupported(c)) {
-        chosenMime = c;
-        break;
+      if (window.electronAPI && window.electronAPI.recordingStarted) {
+        window.electronAPI.recordingStarted();
       }
-    }
-    if (!chosenMime) chosenMime = 'video/webm';
-    this.selectedMimeType = chosenMime;
 
-    this.mediaRecorder = new MediaRecorder(finalStream, {
-      mimeType: chosenMime,
-      videoBitsPerSecond: 8000000
-    });
-
-    this.mediaRecorder.ondataavailable = (event) => {
-      if (event.data && event.data.size > 0) {
-        this.recordedChunks.push(event.data);
+      if (this.onRecordingStateChange) {
+        this.onRecordingStateChange('recording');
       }
-    };
-
-    this.mediaRecorder.onstop = async () => {
-      await this.saveRecordingFile();
-    };
-
-    this.mediaRecorder.start(1000);
-    this.isRecording = true;
-    this.isPaused = false;
-    this.recordingStartTime = Date.now();
-    this.elapsedSeconds = 0;
-
-    this.startTimer();
-
-    if (window.electronAPI && window.electronAPI.recordingStarted) {
-      window.electronAPI.recordingStarted();
-    }
-
-    if (this.onRecordingStateChange) {
-      this.onRecordingStateChange('recording');
+    } catch (err) {
+      console.error('Error starting recording:', err);
     }
   }
 
@@ -405,7 +415,7 @@ class CaptoRecorder {
         camVideo.muted = true;
         camVideo.autoplay = true;
         camVideo.srcObject = this.cameraStream;
-        await camVideo.play();
+        await camVideo.play().catch(() => {});
         this.ctx.drawImage(camVideo, 0, 0, this.canvas.width, this.canvas.height);
       }
     } else {
