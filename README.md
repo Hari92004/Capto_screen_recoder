@@ -18,28 +18,28 @@
 
 ## 📥 How to Download & Install
 
-### 🔹 Option 1: Direct Download (Ready-to-Use Desktop App)
+### 🔹 Option 1: Direct Download (.exe & Desktop Installers)
 
-Download the latest release for your operating system from the **[Releases](https://github.com/Hari92004/Capto_screen_recoder/releases)** page:
+Click below to download the direct standalone executable for your operating system:
 
-| Platform | Download Link | Format |
+| Platform | Direct 1-Click Download Link | Format |
 | :--- | :--- | :--- |
-| **🪟 Windows 10 / 11** | [Download Capto-Setup.exe](https://github.com/Hari92004/Capto_screen_recoder/releases) | `.exe` (Installer) or Portable |
-| **🍎 macOS (Apple Silicon & Intel)** | [Download Capto.dmg](https://github.com/Hari92004/Capto_screen_recoder/releases) | `.dmg` (Drag-to-Applications) |
-| **🐧 Linux (Ubuntu, Debian, Fedora)** | [Download Capto.AppImage](https://github.com/Hari92004/Capto_screen_recoder/releases) | `.AppImage` or `.deb` package |
+| **🪟 Windows 10 / 11** | [⬇️ **Download Capto-Setup.exe (Direct)**](https://github.com/Hari92004/Capto_screen_recoder/releases/download/v1.0.0/Capto-Setup.exe) | `.exe` (Installer) |
+| **🍎 macOS (Apple Silicon & Intel)** | [⬇️ **Download Capto.dmg (Direct)**](https://github.com/Hari92004/Capto_screen_recoder/releases/download/v1.0.0/Capto.dmg) | `.dmg` (Drag-to-Apps) |
+| **🐧 Linux (Ubuntu, Debian, Fedora)** | [⬇️ **Download Capto.AppImage (Direct)**](https://github.com/Hari92004/Capto_screen_recoder/releases/download/v1.0.0/Capto.AppImage) | `.AppImage` (Executable) |
 
 #### 🪟 Windows Quick Install:
-1. Download **`Capto-Setup.exe`** from [Releases](https://github.com/Hari92004/Capto_screen_recoder/releases).
-2. Double-click the file to install (desktop shortcut created automatically).
+1. Click **[Download Capto-Setup.exe](https://github.com/Hari92004/Capto_screen_recoder/releases/download/v1.0.0/Capto-Setup.exe)** to start direct download.
+2. Double-click the downloaded `.exe` file (desktop shortcut created automatically).
 3. Launch **Capto Screen Recorder** and start recording!
 
 #### 🍎 macOS Quick Install:
-1. Download **`Capto.dmg`** from [Releases](https://github.com/Hari92004/Capto_screen_recoder/releases).
+1. Click **[Download Capto.dmg](https://github.com/Hari92004/Capto_screen_recoder/releases/download/v1.0.0/Capto.dmg)** to start direct download.
 2. Open the `.dmg` file and drag **Capto** into your **Applications** folder.
-3. Open from Launchpad (*Grant Screen Recording and Camera permissions in System Settings when prompted*).
+3. Open from Launchpad (*Grant Screen Recording and Camera permissions when prompted*).
 
 #### 🐧 Linux Quick Install:
-1. Download **`Capto.AppImage`** from [Releases](https://github.com/Hari92004/Capto_screen_recoder/releases).
+1. Click **[Download Capto.AppImage](https://github.com/Hari92004/Capto_screen_recoder/releases/download/v1.0.0/Capto.AppImage)** to start direct download.
 2. Make it executable: `chmod +x Capto.AppImage`.
 3. Double-click or run `./Capto.AppImage`.
 
