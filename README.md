@@ -16,32 +16,22 @@
 
 </div>
 
-## 📥 How to Download & Install
+## 📥 How to Download & Run
 
-### 🔹 Option 1: Direct Download (.exe & Desktop Installers)
+### 🔹 Option 1: Direct Download (Ready-to-Use Portable Desktop App)
 
-Click below to download the direct standalone executable for your operating system:
+Click below to download the direct standalone package for Windows:
 
 | Platform | Direct 1-Click Download Link | Format |
 | :--- | :--- | :--- |
-| **🪟 Windows 10 / 11** | [⬇️ **Download Capto-Setup.exe (Direct)**](https://github.com/Hari92004/Capto_screen_recoder/releases/download/v1.0.0/Capto-Setup.exe) | `.exe` (Installer) |
+| **🪟 Windows 10 / 11** | [⬇️ **Download Capto-Windows-Portable.zip (Direct)**](https://github.com/Hari92004/Capto_screen_recoder/releases/download/v1.0.0/Capto-Windows-Portable.zip) | `.zip` (Portable `.exe` included) |
 | **🍎 macOS (Apple Silicon & Intel)** | [⬇️ **Download Capto.dmg (Direct)**](https://github.com/Hari92004/Capto_screen_recoder/releases/download/v1.0.0/Capto.dmg) | `.dmg` (Drag-to-Apps) |
 | **🐧 Linux (Ubuntu, Debian, Fedora)** | [⬇️ **Download Capto.AppImage (Direct)**](https://github.com/Hari92004/Capto_screen_recoder/releases/download/v1.0.0/Capto.AppImage) | `.AppImage` (Executable) |
 
-#### 🪟 Windows Quick Install:
-1. Click **[Download Capto-Setup.exe](https://github.com/Hari92004/Capto_screen_recoder/releases/download/v1.0.0/Capto-Setup.exe)** to start direct download.
-2. Double-click the downloaded `.exe` file (desktop shortcut created automatically).
-3. Launch **Capto Screen Recorder** and start recording!
-
-#### 🍎 macOS Quick Install:
-1. Click **[Download Capto.dmg](https://github.com/Hari92004/Capto_screen_recoder/releases/download/v1.0.0/Capto.dmg)** to start direct download.
-2. Open the `.dmg` file and drag **Capto** into your **Applications** folder.
-3. Open from Launchpad (*Grant Screen Recording and Camera permissions when prompted*).
-
-#### 🐧 Linux Quick Install:
-1. Click **[Download Capto.AppImage](https://github.com/Hari92004/Capto_screen_recoder/releases/download/v1.0.0/Capto.AppImage)** to start direct download.
-2. Make it executable: `chmod +x Capto.AppImage`.
-3. Double-click or run `./Capto.AppImage`.
+#### 🪟 Windows Quick Start:
+1. Click **[Download Capto-Windows-Portable.zip](https://github.com/Hari92004/Capto_screen_recoder/releases/download/v1.0.0/Capto-Windows-Portable.zip)**.
+2. Extract the downloaded zip file.
+3. Double-click **`Capto Screen Recorder.exe`** to launch instantly without any installation!
 
 ---
 
@@ -59,14 +49,6 @@ npm install
 
 # 3. Launch Capto in Development Mode
 npm start
-```
-
-#### Package Standalone Installers:
-```bash
-npm run dist:win     # Generates Windows .exe installer & portable in dist/
-npm run dist:mac     # Generates macOS .dmg installer in dist/
-npm run dist:linux   # Generates Linux .AppImage & .deb in dist/
-npm run dist:all     # Build packages for all platforms
 ```
 
 ---
