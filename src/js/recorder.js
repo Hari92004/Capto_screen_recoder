@@ -1,6 +1,6 @@
 /**
  * CAPTO RECORDER ENGINE
- * DirectX Screen Capture, Robust Camera Initializer, Native Resolution Custom Crop Compositor & 60FPS MediaRecorder
+ * DirectX Screen Capture, Mirrored Selfie Webcam Compositor, Ultra-HD 16Mbps Bitrate & 60FPS MediaRecorder
  */
 
 class CaptoRecorder {
@@ -28,6 +28,7 @@ class CaptoRecorder {
     this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
     this.compositorIntervalId = null;
     this.cropVideoElement = null;
+    this.camVideoElement = null;
 
     // Callbacks
     this.onRecordingStateChange = null;
@@ -67,8 +68,9 @@ class CaptoRecorder {
       const targetDeviceId = deviceId || this.cameraDeviceId;
       let constraints = {
         video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          width: { ideal: 1920, min: 1280 },
+          height: { ideal: 1080, min: 720 },
+          frameRate: { ideal: 60, min: 30 }
         },
         audio: false
       };
@@ -80,7 +82,7 @@ class CaptoRecorder {
       try {
         this.cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
       } catch (err1) {
-        console.warn('Camera constraints fallback to standard video:', err1);
+        console.warn('High-res camera constraints fallback to standard video:', err1);
         this.cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       }
 
@@ -115,9 +117,9 @@ class CaptoRecorder {
             mandatory: {
               chromeMediaSource: 'desktop',
               chromeMediaSourceId: sourceId,
-              minWidth: 1280,
+              minWidth: 1920,
               maxWidth: 3840,
-              minHeight: 720,
+              minHeight: 1080,
               maxHeight: 2160,
               minFrameRate: 30,
               maxFrameRate: 60
@@ -151,7 +153,7 @@ class CaptoRecorder {
         await this.startCamera();
       }
 
-      // Audio DSP Pipeline (Safe Invocation)
+      // Audio DSP Pipeline
       let processedAudioStream = null;
       try {
         if (window.fligoAudioEngine) {
@@ -166,7 +168,7 @@ class CaptoRecorder {
           processedAudioStream = micStream;
         }
       } catch (audioErr) {
-        console.warn('Audio DSP init fallback to raw mic:', audioErr);
+        console.warn('Audio DSP fallback to raw mic:', audioErr);
         processedAudioStream = micStream;
       }
 
@@ -217,7 +219,48 @@ class CaptoRecorder {
         const canvasStream = this.canvas.captureStream(60);
         videoTrack = canvasStream.getVideoTracks()[0];
       } else if (this.currentMode === 'camera') {
-        videoTrack = this.cameraStream ? this.cameraStream.getVideoTracks()[0] : null;
+        // Mirrored Selfie View + Brightness Filter for Webcam Only Recording
+        if (!this.camVideoElement) {
+          this.camVideoElement = document.createElement('video');
+          this.camVideoElement.muted = true;
+          this.camVideoElement.autoplay = true;
+          this.camVideoElement.playsInline = true;
+        }
+        this.camVideoElement.srcObject = this.cameraStream;
+        this.camVideoElement.play().catch(() => {});
+
+        const camTrack = this.cameraStream ? this.cameraStream.getVideoTracks()[0] : null;
+        const settings = camTrack && camTrack.getSettings ? camTrack.getSettings() : {};
+        const nativeW = settings.width || 1920;
+        const nativeH = settings.height || 1080;
+
+        this.canvas.width = nativeW;
+        this.canvas.height = nativeH;
+
+        const drawCamFrame = () => {
+          if (!this.isRecording) return;
+          try {
+            if (this.camVideoElement && this.camVideoElement.readyState >= 2) {
+              this.ctx.save();
+              this.ctx.clearRect(0, 0, nativeW, nativeH);
+              // Face Brightness Enhancement
+              this.ctx.filter = `brightness(${this.cameraBrightnessPercent}%)`;
+              // Natural Horizontal Mirror Flip
+              this.ctx.translate(nativeW, 0);
+              this.ctx.scale(-1, 1);
+              this.ctx.drawImage(this.camVideoElement, 0, 0, nativeW, nativeH);
+              this.ctx.restore();
+            }
+          } catch (e) {}
+        };
+
+        drawCamFrame();
+
+        if (this.compositorIntervalId) clearInterval(this.compositorIntervalId);
+        this.compositorIntervalId = setInterval(drawCamFrame, 1000 / 60);
+
+        const canvasStream = this.canvas.captureStream(60);
+        videoTrack = canvasStream.getVideoTracks()[0];
       } else {
         videoTrack = this.screenStream ? this.screenStream.getVideoTracks()[0] : null;
       }
@@ -235,9 +278,12 @@ class CaptoRecorder {
       const finalStream = new MediaStream(combinedTracks);
       this.recordedChunks = [];
 
+      // High-Fidelity Codec Hierarchy (VP9 / H264 / AV1)
       const codecs = [
-        'video/webm;codecs=vp8,opus',
+        'video/webm;codecs=vp9,opus',
         'video/webm;codecs=h264,opus',
+        'video/mp4;codecs=avc1,mp4a.40.2',
+        'video/webm;codecs=vp8,opus',
         'video/webm',
         'video/mp4'
       ];
@@ -252,9 +298,11 @@ class CaptoRecorder {
       if (!chosenMime) chosenMime = 'video/webm';
       this.selectedMimeType = chosenMime;
 
+      // Ultra-HD High Bitrate (16 Mbps for pristine crisp quality)
       this.mediaRecorder = new MediaRecorder(finalStream, {
         mimeType: chosenMime,
-        videoBitsPerSecond: 8000000
+        videoBitsPerSecond: 16000000,
+        audioBitsPerSecond: 256000
       });
 
       this.mediaRecorder.ondataavailable = (event) => {
@@ -430,7 +478,12 @@ class CaptoRecorder {
         camVideo.autoplay = true;
         camVideo.srcObject = this.cameraStream;
         await camVideo.play().catch(() => {});
+
+        this.ctx.save();
+        this.ctx.translate(this.canvas.width, 0);
+        this.ctx.scale(-1, 1);
         this.ctx.drawImage(camVideo, 0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.restore();
       }
     } else {
       this.ctx.filter = 'none';
