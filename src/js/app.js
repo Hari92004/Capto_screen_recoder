@@ -419,14 +419,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       updateCamControlsState(true);
       if (window.electronAPI && window.electronAPI.hideCropBorder) window.electronAPI.hideCropBorder();
 
+      await stopCameraFeeds();
       if (previewVideo) {
         previewVideo.style.transform = 'scaleX(-1)';
         previewVideo.style.filter = `brightness(${sliderBrightness ? sliderBrightness.value : 100}%)`;
+        previewVideo.srcObject = null;
       }
 
-      await stopCameraFeeds();
       currentCamStream = await window.fligoRecorder.startCamera(selectedCamId);
-      if (currentCamStream) {
+      if (currentCamStream && previewVideo) {
         previewVideo.srcObject = currentCamStream;
         previewVideo.play().catch(() => {});
       }

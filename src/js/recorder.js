@@ -1,6 +1,6 @@
 /**
  * CAPTO RECORDER ENGINE
- * DirectX Screen Capture, Mirrored Selfie Webcam Compositor, Ultra-HD 16Mbps Bitrate & 60FPS MediaRecorder
+ * DirectX Screen Capture, Instant Universal Webcam Stream, Native Resolution Custom Crop & 60FPS 16Mbps MediaRecorder
  */
 
 class CaptoRecorder {
@@ -61,29 +61,32 @@ class CaptoRecorder {
 
   async startCamera(deviceId = '') {
     try {
-      if (this.cameraStream && this.cameraStream.getVideoTracks().length > 0 && this.cameraStream.getVideoTracks()[0].readyState === 'live') {
-        return this.cameraStream;
+      if (this.cameraStream) {
+        this.cameraStream.getTracks().forEach(t => t.stop());
+        this.cameraStream = null;
       }
 
       const targetDeviceId = deviceId || this.cameraDeviceId;
-      let constraints = {
-        video: {
-          width: { ideal: 1920, min: 1280 },
-          height: { ideal: 1080, min: 720 },
-          frameRate: { ideal: 60, min: 30 }
-        },
-        audio: false
+      let videoConstraints = {
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
       };
 
       if (targetDeviceId) {
-        constraints.video.deviceId = { ideal: targetDeviceId };
+        videoConstraints.deviceId = { ideal: targetDeviceId };
       }
 
       try {
-        this.cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+        this.cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: videoConstraints,
+          audio: false
+        });
       } catch (err1) {
-        console.warn('High-res camera constraints fallback to standard video:', err1);
-        this.cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        console.warn('Ideal camera constraint failed, using direct native video:', err1);
+        this.cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false
+        });
       }
 
       return this.cameraStream;
@@ -117,9 +120,9 @@ class CaptoRecorder {
             mandatory: {
               chromeMediaSource: 'desktop',
               chromeMediaSourceId: sourceId,
-              minWidth: 1920,
+              minWidth: 1280,
               maxWidth: 3840,
-              minHeight: 1080,
+              minHeight: 720,
               maxHeight: 2160,
               minFrameRate: 30,
               maxFrameRate: 60
@@ -231,8 +234,8 @@ class CaptoRecorder {
 
         const camTrack = this.cameraStream ? this.cameraStream.getVideoTracks()[0] : null;
         const settings = camTrack && camTrack.getSettings ? camTrack.getSettings() : {};
-        const nativeW = settings.width || 1920;
-        const nativeH = settings.height || 1080;
+        const nativeW = settings.width || 1280;
+        const nativeH = settings.height || 720;
 
         this.canvas.width = nativeW;
         this.canvas.height = nativeH;
@@ -298,7 +301,7 @@ class CaptoRecorder {
       if (!chosenMime) chosenMime = 'video/webm';
       this.selectedMimeType = chosenMime;
 
-      // Ultra-HD High Bitrate (16 Mbps for pristine crisp quality)
+      // Ultra-HD High Bitrate (16 Mbps)
       this.mediaRecorder = new MediaRecorder(finalStream, {
         mimeType: chosenMime,
         videoBitsPerSecond: 16000000,
