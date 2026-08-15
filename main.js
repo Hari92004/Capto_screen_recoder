@@ -262,7 +262,7 @@ ipcMain.on('window-close', () => {
 // Auto-Hide Main Window Completely on Recording Start
 ipcMain.on('recording-started', () => {
   if (mainWindow) {
-    mainWindow.hide(); // Instantly hides the dashboard from screen so it never blocks your desktop!
+    mainWindow.hide();
   }
   openToolbar();
 });
@@ -338,12 +338,10 @@ ipcMain.on('hide-toolbar', () => {
   }
 });
 
+// Forward Toolbar Button Actions to Main Window
 ipcMain.on('toolbar-action', (event, action) => {
   if (mainWindow) {
-    mainWindow.webContents.send('fromtoolbar', action);
-    if (action === 'stop' && window.fligoRecorder) {
-      window.fligoRecorder.stopRecording();
-    }
+    mainWindow.webContents.send('from-toolbar', action);
   }
 });
 
