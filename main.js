@@ -41,7 +41,7 @@ function createMainWindow() {
     transparent: true,
     backgroundColor: '#00000000',
     hasShadow: false,
-    resizable: false, // Fixed sleek studio dimensions - prevents window stretch/distortion
+    resizable: false,
     maximizable: false,
     icon: appIcon || appIconPath,
     titleBarStyle: 'hidden',
@@ -305,7 +305,11 @@ ipcMain.on('open-camera-overlay', (event, { shape, size, deviceId }) => {
 
 ipcMain.on('close-camera-overlay', () => {
   if (cameraOverlayWindow) {
+    try {
+      cameraOverlayWindow.webContents.send('stop-cam-feed');
+    } catch (e) {}
     cameraOverlayWindow.close();
+    cameraOverlayWindow = null;
   }
 });
 

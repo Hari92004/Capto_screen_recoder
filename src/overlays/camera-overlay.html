@@ -128,11 +128,19 @@
     let currentShapeIndex = 0;
     let currentStream = null;
 
+    function stopStream() {
+      if (currentStream) {
+        currentStream.getTracks().forEach(t => t.stop());
+        currentStream = null;
+      }
+      if (video) {
+        video.srcObject = null;
+      }
+    }
+
     async function initCamera(deviceId = '') {
       try {
-        if (currentStream) {
-          currentStream.getTracks().forEach(t => t.stop());
-        }
+        stopStream();
         const constraints = deviceId
           ? { deviceId: { exact: deviceId }, width: 1280, height: 720 }
           : { width: 1280, height: 720 };
@@ -163,12 +171,21 @@
 
     btnCloseCam.addEventListener('click', (e) => {
       e.stopPropagation();
+      stopStream();
       if (window.electronAPI) {
         window.electronAPI.closeCameraOverlay();
       }
     });
 
+    window.addEventListener('beforeunload', () => {
+      stopStream();
+    });
+
     if (window.electronAPI) {
+      window.electronAPI.onStopCamFeed(() => {
+        stopStream();
+      });
+
       window.electronAPI.onInitCamSettings(({ shape, deviceId }) => {
         if (shape) setShape(shape);
         initCamera(deviceId || '');

@@ -10,7 +10,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
-    "dist:win": "electron-builder --win",
+    "dist:win": "electron-builder --win nsis",
     "dist:mac": "electron-builder --mac",
     "dist:linux": "electron-builder --linux",
     "dist:all": "electron-builder -wml",
@@ -35,7 +35,8 @@
   "license": "MIT",
   "devDependencies": {
     "electron": "^31.0.0",
-    "electron-builder": "^24.13.3"
+    "electron-builder": "^24.13.3",
+    "rcedit": "^5.0.2"
   },
   "build": {
     "appId": "com.capto.screenrecorder",
@@ -45,36 +46,38 @@
       "output": "dist"
     },
     "win": {
-      "target": [
-        {
-          "target": "nsis",
-          "arch": ["x64", "arm64"]
-        },
-        {
-          "target": "portable",
-          "arch": ["x64"]
-        }
-      ],
-      "icon": "src/assets/icon.png"
+      "target": "nsis",
+      "icon": "src/assets/icon.ico"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Capto Screen Recorder"
+      "shortcutName": "Capto Screen Recorder",
+      "artifactName": "Capto-Setup.${ext}",
+      "installerIcon": "src/assets/icon.ico",
+      "uninstallerIcon": "src/assets/icon.ico",
+      "installerHeaderIcon": "src/assets/icon.ico"
     },
     "mac": {
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64", "universal"]
+          "arch": [
+            "x64",
+            "arm64",
+            "universal"
+          ]
         },
         {
           "target": "zip",
-          "arch": ["universal"]
+          "arch": [
+            "universal"
+          ]
         }
       ],
+      "icon": "src/assets/icon.png",
       "category": "public.app-category.video",
       "hardenedRuntime": true,
       "gatekeeperAssess": false
@@ -97,17 +100,25 @@
       "target": [
         {
           "target": "AppImage",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         },
         {
           "target": "deb",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "tar.gz",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
+      "icon": "src/assets/icon.png",
       "category": "AudioVideo;Recorder;",
       "maintainer": "Hari"
     }

@@ -27,6 +27,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onUpdateCamSettings: (callback) => ipcRenderer.on('update-cam-settings', (event, data) => callback(data)),
   onUpdateCamShape: (callback) => ipcRenderer.on('update-cam-shape', (event, shape) => callback(shape)),
   onUpdateCamBrightness: (callback) => ipcRenderer.on('update-cam-brightness', (event, val) => callback(val)),
+  onStopCamFeed: (callback) => ipcRenderer.on('stop-cam-feed', () => callback()),
 
   // Floating Dynamic Island Toolbar
   showToolbar: () => ipcRenderer.send('show-toolbar'),

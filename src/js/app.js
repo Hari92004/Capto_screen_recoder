@@ -1,6 +1,6 @@
 /**
  * CAPTO APP CONTROLLER
- * Device Enumeration, Fail-Safe Audio Hotplug, Webcam Mirroring, Strict Camera Killing & VU Visualizer
+ * Device Enumeration, Fail-Safe Audio Hotplug, Strict Hardware Camera Teardown & VU Visualizer
  */
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -346,17 +346,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Strict Camera Feed Killer helper
+  // Strict Hardware Camera Killer
   async function stopCameraFeeds() {
     if (currentCamStream) {
       currentCamStream.getTracks().forEach(t => t.stop());
       currentCamStream = null;
     }
-    if (pipCameraVideo) {
+    if (pipCameraVideo && pipCameraVideo.srcObject) {
+      pipCameraVideo.srcObject.getTracks().forEach(t => t.stop());
       pipCameraVideo.srcObject = null;
     }
+    if (previewVideo && previewVideo.srcObject && window.fligoRecorder.currentMode !== 'camera' && previewVideo.srcObject !== currentScreenStream) {
+      previewVideo.srcObject.getTracks().forEach(t => t.stop());
+    }
     await window.fligoRecorder.stopCamera();
-    if (window.electronAPI) {
+    if (window.electronAPI && window.electronAPI.closeCameraOverlay) {
       window.electronAPI.closeCameraOverlay();
     }
   }
@@ -433,20 +437,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (previewVideo) {
         previewVideo.style.filter = 'none';
-        previewVideo.style.transform = 'none'; // Screen is never flipped!
+        previewVideo.style.transform = 'none';
       }
       if (pipCameraVideo) {
         pipCameraVideo.style.filter = `brightness(${sliderBrightness ? sliderBrightness.value : 100}%)`;
-        pipCameraVideo.style.transform = 'scaleX(-1)'; // Natural webcam PiP
+        pipCameraVideo.style.transform = 'scaleX(-1)';
       }
 
+      await stopCameraFeeds();
       currentScreenStream = await window.fligoRecorder.startScreenStream();
       if (currentScreenStream) {
         previewVideo.srcObject = currentScreenStream;
         previewVideo.play().catch(() => {});
       }
 
-      await stopCameraFeeds();
       currentCamStream = await window.fligoRecorder.startCamera(selectedCamId);
       if (currentCamStream) {
         pipCameraVideo.srcObject = currentCamStream;
