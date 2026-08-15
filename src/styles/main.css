@@ -1,5 +1,5 @@
 /* ==========================================================================
-   CAPTO SCREEN RECORDER - PURE iPHONE LIQUID GLASS UI (iOS HIG)
+   CAPTO SCREEN RECORDER - PURE LIQUID GLASS UI (iOS HIG)
    ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
@@ -53,7 +53,7 @@ html, body {
   display: none !important;
 }
 
-/* iPhone App Window fills exact bounds with crisp rounded corners */
+/* Main Studio Window */
 .app-window {
   width: 100%;
   height: 100%;
@@ -329,7 +329,7 @@ html, body {
   font-size: 11px;
 }
 
-/* 3. Big iPhone Recording Shutter Section */
+/* 3. Recording Shutter Section */
 .shutter-section {
   display: flex;
   align-items: center;
@@ -381,7 +381,7 @@ html, body {
   border-radius: 20px;
 }
 
-/* 4. Quick iOS Control Center Settings Group */
+/* 4. Quick Control Center Settings Group */
 .ios-settings-card {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -600,18 +600,26 @@ input:checked + .slider-round:before {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.15);
   color: white;
-  padding: 4px 10px;
+  padding: 5px 12px;
   border-radius: 10px;
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-/* Gallery View */
+.glass-action-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   GALLERY / LIBRARY VIEW - FULLY RESPONSIVE AUTO-ADAPTIVE GRID (16:9 RATIO)
+   ========================================================================== */
 .gallery-view {
   display: none;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   height: 100%;
 }
 
@@ -621,9 +629,20 @@ input:checked + .slider-round:before {
 
 .gallery-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
   overflow-y: auto;
+  padding-right: 4px;
+  align-items: start;
+}
+
+.gallery-grid::-webkit-scrollbar {
+  width: 4px;
+}
+
+.gallery-grid::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
 }
 
 .recording-card {
@@ -633,24 +652,43 @@ input:checked + .slider-round:before {
   padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  transition: transform 0.2s var(--ios-spring), background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.recording-card:hover {
+  transform: translateY(-3px);
+  background: var(--ios-glass-card-hover);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
 .recording-thumb {
   width: 100%;
-  height: 100px;
-  background: #000;
-  border-radius: 10px;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  background: #000000;
+  border-radius: 12px;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .recording-thumb video {
   width: 100%;
   height: 100%;
+  aspect-ratio: 16 / 9;
   object-fit: cover;
-  border-radius: 10px;
+  border-radius: 12px;
+}
+
+.recording-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-secondary);
 }
