@@ -1,39 +1,37 @@
 /**
- * CAPTO RECORDING ENGINE
- * Direct GPU Stream Capture, Camera Brightness Control, Custom Region Cropper, & Universal MediaRecorder
+ * CAPTO RECORDER ENGINE
+ * DirectX Screen Capture, Native Resolution Custom Crop Compositor, Mode-Based Filenames & 60FPS MediaRecorder
  */
 
-class FligoRecorder {
+class CaptoRecorder {
   constructor() {
-    this.screenStream = null;
-    this.cameraStream = null;
-    this.mixedAudioStream = null;
     this.mediaRecorder = null;
     this.recordedChunks = [];
-
-    // State
     this.isRecording = false;
     this.isPaused = false;
-    this.recordingStartTime = 0;
-    this.elapsedSeconds = 0;
     this.timerInterval = null;
+    this.elapsedSeconds = 0;
+    this.recordingStartTime = 0;
 
-    // Modes: 'fullscreen' | 'region' | 'dual' | 'camera'
-    this.currentMode = 'fullscreen';
-    this.selectedRegion = null;
-    this.cameraShape = 'circle';
-    this.cameraSize = 180;
-    this.cameraBrightnessPercent = 100;
+    this.currentMode = 'fullscreen'; // 'fullscreen' | 'region' | 'dual' | 'camera'
+    this.selectedRegion = null;      // { x, y, width, height }
+    this.cameraShape = 'circle';     // 'circle' | 'rounded' | 'rect'
+    this.cameraSize = 190;
     this.cameraDeviceId = '';
+    this.cameraBrightnessPercent = 100;
 
-    // Offscreen Canvas for Region Cropping
-    this.canvas = document.getElementById('compositor-canvas') || document.createElement('canvas');
-    this.ctx = this.canvas.getContext('2d');
-    this.compositorRafId = null;
+    this.screenStream = null;
+    this.cameraStream = null;
+    this.audioStream = null;
+
+    this.canvas = document.createElement('canvas');
+    this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
+    this.compositorIntervalId = null;
+    this.cropVideoElement = null;
 
     // Callbacks
-    this.onTimerTick = null;
     this.onRecordingStateChange = null;
+    this.onTimerTick = null;
   }
 
   setMode(mode) {
@@ -66,14 +64,14 @@ class FligoRecorder {
       const videoConstraints = targetDeviceId
         ? {
             deviceId: { exact: targetDeviceId },
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            frameRate: { ideal: 30 }
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            frameRate: { ideal: 60 }
           }
         : {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            frameRate: { ideal: 30 }
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            frameRate: { ideal: 60 }
           };
 
       this.cameraStream = await navigator.mediaDevices.getUserMedia({
@@ -110,17 +108,22 @@ class FligoRecorder {
           video: {
             mandatory: {
               chromeMediaSource: 'desktop',
-              chromeMediaSourceId: sourceId
+              chromeMediaSourceId: sourceId,
+              minWidth: 1280,
+              maxWidth: 3840,
+              minHeight: 720,
+              maxHeight: 2160,
+              minFrameRate: 30,
+              maxFrameRate: 60
             }
           }
         });
       } else {
         this.screenStream = await navigator.mediaDevices.getDisplayMedia({
-          video: true,
+          video: { frameRate: { ideal: 60 } },
           audio: false
         });
       }
-
       return this.screenStream;
     } catch (err) {
       console.error('Error starting screen stream:', err);
@@ -128,7 +131,7 @@ class FligoRecorder {
     }
   }
 
-  async startRecording(micStream = null, systemStream = null) {
+  async startRecording(micStream, systemAudioStream) {
     if (this.isRecording) return;
 
     if (!this.screenStream && this.currentMode !== 'camera') {
@@ -138,36 +141,62 @@ class FligoRecorder {
       await this.startCamera();
     }
 
-    // Init Audio DSP pipeline
+    // Audio DSP Pipeline
     let processedAudioStream = null;
     if (window.fligoAudioEngine) {
-      processedAudioStream = await window.fligoAudioEngine.init(micStream, systemStream);
+      processedAudioStream = await window.fligoAudioEngine.buildAudioStream(
+        micStream,
+        systemAudioStream
+      );
+    } else {
+      processedAudioStream = micStream;
     }
 
-    // Determine Video Track
-    let videoTrack = null;
     const isRegion = this.currentMode === 'region' && this.selectedRegion;
+    let videoTrack = null;
 
     if (isRegion) {
-      const previewVideo = document.getElementById('preview-video');
-      const outWidth = this.selectedRegion.width;
-      const outHeight = this.selectedRegion.height;
+      if (!this.cropVideoElement) {
+        this.cropVideoElement = document.createElement('video');
+        this.cropVideoElement.muted = true;
+        this.cropVideoElement.autoplay = true;
+        this.cropVideoElement.playsInline = true;
+      }
+      this.cropVideoElement.srcObject = this.screenStream;
+      await this.cropVideoElement.play().catch(() => {});
+
+      const screenTrack = this.screenStream.getVideoTracks()[0];
+      const settings = screenTrack && screenTrack.getSettings ? screenTrack.getSettings() : {};
+      const nativeW = settings.width || window.screen.width * (window.devicePixelRatio || 1);
+      const nativeH = settings.height || window.screen.height * (window.devicePixelRatio || 1);
+
+      const outWidth = Math.max(2, Math.round(this.selectedRegion.width));
+      const outHeight = Math.max(2, Math.round(this.selectedRegion.height));
       this.canvas.width = outWidth;
       this.canvas.height = outHeight;
 
-      const renderCropped = () => {
+      const rx = Math.max(0, Math.min(nativeW - outWidth, Math.round(this.selectedRegion.x)));
+      const ry = Math.max(0, Math.min(nativeH - outHeight, Math.round(this.selectedRegion.y)));
+
+      const drawFrame = () => {
         if (!this.isRecording) return;
-        if (previewVideo && previewVideo.readyState >= 2) {
-          const rx = this.selectedRegion.x;
-          const ry = this.selectedRegion.y;
-          const rw = this.selectedRegion.width;
-          const rh = this.selectedRegion.height;
-          this.ctx.filter = 'none';
-          this.ctx.drawImage(previewVideo, rx, ry, rw, rh, 0, 0, outWidth, outHeight);
-        }
-        this.compositorRafId = requestAnimationFrame(renderCropped);
+        try {
+          if (this.cropVideoElement && this.cropVideoElement.readyState >= 2) {
+            this.ctx.drawImage(
+              this.cropVideoElement,
+              rx, ry, outWidth, outHeight,
+              0, 0, outWidth, outHeight
+            );
+          }
+        } catch (e) {}
       };
-      renderCropped();
+
+      // Draw initial frame immediately
+      drawFrame();
+
+      // Reliable 60FPS tick that never throttles when main window is hidden
+      if (this.compositorIntervalId) clearInterval(this.compositorIntervalId);
+      this.compositorIntervalId = setInterval(drawFrame, 1000 / 60);
 
       const canvasStream = this.canvas.captureStream(60);
       videoTrack = canvasStream.getVideoTracks()[0];
@@ -253,9 +282,9 @@ class FligoRecorder {
     this.isPaused = false;
     clearInterval(this.timerInterval);
 
-    if (this.compositorRafId) {
-      cancelAnimationFrame(this.compositorRafId);
-      this.compositorRafId = null;
+    if (this.compositorIntervalId) {
+      clearInterval(this.compositorIntervalId);
+      this.compositorIntervalId = null;
     }
 
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
@@ -306,6 +335,16 @@ class FligoRecorder {
     return buffer;
   }
 
+  getModeName() {
+    switch (this.currentMode) {
+      case 'fullscreen': return 'FullScreen';
+      case 'region': return 'CustomCrop';
+      case 'dual': return 'Face+Screen';
+      case 'camera': return 'WebcamOnly';
+      default: return 'ScreenRecording';
+    }
+  }
+
   async saveRecordingFile() {
     const isMp4 = this.selectedMimeType.includes('mp4');
     const extension = isMp4 ? 'mp4' : 'webm';
@@ -322,7 +361,9 @@ class FligoRecorder {
     const date = new Date();
     const pad = (n) => String(n).padStart(2, '0');
     const timestamp = `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}_${pad(date.getHours())}-${pad(date.getMinutes())}-${pad(date.getSeconds())}`;
-    const filename = `Capto_${this.currentMode}_${timestamp}.${extension}`;
+    
+    const modeLabel = this.getModeName();
+    const filename = `Capto_${modeLabel}_${timestamp}.${extension}`;
 
     if (window.electronAPI && window.electronAPI.saveRecording) {
       const result = await window.electronAPI.saveRecording({
@@ -344,11 +385,14 @@ class FligoRecorder {
       await this.startCamera();
     }
 
-    const previewVideo = document.getElementById('preview-video');
     const isRegion = this.currentMode === 'region' && this.selectedRegion;
+    const screenTrack = this.screenStream ? this.screenStream.getVideoTracks()[0] : null;
+    const settings = screenTrack && screenTrack.getSettings ? screenTrack.getSettings() : {};
+    const nativeW = settings.width || 1920;
+    const nativeH = settings.height || 1080;
 
-    const outWidth = isRegion ? this.selectedRegion.width : (previewVideo.videoWidth || 1920);
-    const outHeight = isRegion ? this.selectedRegion.height : (previewVideo.videoHeight || 1080);
+    const outWidth = isRegion ? this.selectedRegion.width : nativeW;
+    const outHeight = isRegion ? this.selectedRegion.height : nativeH;
 
     this.canvas.width = outWidth;
     this.canvas.height = outHeight;
@@ -358,22 +402,29 @@ class FligoRecorder {
       this.ctx.filter = `brightness(${this.cameraBrightnessPercent}%)`;
       if (this.cameraStream) {
         const camVideo = document.createElement('video');
+        camVideo.muted = true;
+        camVideo.autoplay = true;
         camVideo.srcObject = this.cameraStream;
         await camVideo.play();
         this.ctx.drawImage(camVideo, 0, 0, this.canvas.width, this.canvas.height);
       }
     } else {
       this.ctx.filter = 'none';
-      if (previewVideo && previewVideo.readyState >= 2) {
-        if (isRegion) {
-          const rx = this.selectedRegion.x;
-          const ry = this.selectedRegion.y;
-          const rw = this.selectedRegion.width;
-          const rh = this.selectedRegion.height;
-          this.ctx.drawImage(previewVideo, rx, ry, rw, rh, 0, 0, outWidth, outHeight);
-        } else {
-          this.ctx.drawImage(previewVideo, 0, 0, this.canvas.width, this.canvas.height);
-        }
+      if (!this.cropVideoElement) {
+        this.cropVideoElement = document.createElement('video');
+        this.cropVideoElement.muted = true;
+        this.cropVideoElement.autoplay = true;
+        this.cropVideoElement.playsInline = true;
+      }
+      this.cropVideoElement.srcObject = this.screenStream;
+      await this.cropVideoElement.play().catch(() => {});
+
+      if (isRegion) {
+        const rx = Math.max(0, Math.min(nativeW - outWidth, Math.round(this.selectedRegion.x)));
+        const ry = Math.max(0, Math.min(nativeH - outHeight, Math.round(this.selectedRegion.y)));
+        this.ctx.drawImage(this.cropVideoElement, rx, ry, outWidth, outHeight, 0, 0, outWidth, outHeight);
+      } else {
+        this.ctx.drawImage(this.cropVideoElement, 0, 0, this.canvas.width, this.canvas.height);
       }
     }
 
@@ -381,7 +432,9 @@ class FligoRecorder {
     const date = new Date();
     const pad = (n) => String(n).padStart(2, '0');
     const timestamp = `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}_${pad(date.getHours())}-${pad(date.getMinutes())}-${pad(date.getSeconds())}`;
-    const filename = `Capto_Screenshot_${timestamp}.png`;
+    
+    const modeLabel = this.getModeName();
+    const filename = `Capto_Screenshot_${modeLabel}_${timestamp}.png`;
     
     const base64Data = dataUrl.replace(/^data:image\/png;base64,/, "");
     const binary = atob(base64Data);
@@ -400,4 +453,4 @@ class FligoRecorder {
   }
 }
 
-window.fligoRecorder = new FligoRecorder();
+window.fligoRecorder = new CaptoRecorder();
