@@ -1,6 +1,6 @@
 /**
  * CAPTO APP CONTROLLER
- * Device Enumeration, Fail-Safe Audio Hotplug, Strict Hardware Camera Teardown & VU Visualizer
+ * Device Enumeration, Fail-Safe Audio Hotplug, Animated Dotted Crop Border & VU Visualizer
  */
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -417,6 +417,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       pipCameraBox.style.display = 'none';
       rowCamShape.style.display = 'none';
       updateCamControlsState(true);
+      if (window.electronAPI && window.electronAPI.hideCropBorder) window.electronAPI.hideCropBorder();
 
       if (previewVideo) {
         previewVideo.style.transform = 'scaleX(-1)'; // Mirrored Selfie View
@@ -434,6 +435,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       regionActionBar.style.display = 'none';
       rowCamShape.style.display = 'flex';
       updateCamControlsState(true);
+      if (window.electronAPI && window.electronAPI.hideCropBorder) window.electronAPI.hideCropBorder();
 
       if (previewVideo) {
         previewVideo.style.filter = 'none';
@@ -475,7 +477,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         previewVideo.style.transform = 'none';
       }
 
-      // Hard stop any camera feeds immediately
       await stopCameraFeeds();
 
       currentScreenStream = await window.fligoRecorder.startScreenStream();
@@ -484,7 +485,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         previewVideo.play().catch(() => {});
       }
 
-      if (window.electronAPI) {
+      if (window.fligoRecorder.selectedRegion && window.electronAPI) {
+        window.electronAPI.showCropBorder(window.fligoRecorder.selectedRegion);
+      } else if (window.electronAPI) {
         window.electronAPI.openRegionSelector();
       }
     } else {
@@ -493,13 +496,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       regionActionBar.style.display = 'none';
       rowCamShape.style.display = 'none';
       updateCamControlsState(false);
+      if (window.electronAPI && window.electronAPI.hideCropBorder) window.electronAPI.hideCropBorder();
 
       if (previewVideo) {
         previewVideo.style.filter = 'none';
         previewVideo.style.transform = 'none';
       }
 
-      // Hard stop any camera feeds immediately
       await stopCameraFeeds();
 
       currentScreenStream = await window.fligoRecorder.startScreenStream();
@@ -525,10 +528,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.electronAPI.onRegionSelected((region) => {
       window.fligoRecorder.setRegion(region);
       regionCoordsText.textContent = `${region.width} × ${region.height} px`;
+      window.electronAPI.showCropBorder(region);
     });
 
     btnReselectRegion.addEventListener('click', () => {
-      window.electronAPI.openRegionSelector();
+      if (window.electronAPI) {
+        window.electronAPI.hideCropBorder();
+        window.electronAPI.openRegionSelector();
+      }
     });
   }
 

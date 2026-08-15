@@ -12,6 +12,7 @@ app.commandLine.appendSwitch('force-color-profile', 'srgb');
 
 let mainWindow = null;
 let regionSelectorWindow = null;
+let cropBorderWindow = null;
 let cameraOverlayWindow = null;
 let toolbarWindow = null;
 
@@ -37,12 +38,17 @@ function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 640,
     height: 740,
+    minWidth: 640,
+    maxWidth: 640,
+    minHeight: 740,
+    maxHeight: 740,
     frame: false,
     transparent: true,
     backgroundColor: '#00000000',
     hasShadow: false,
-    resizable: false,
+    resizable: false, // Strict fixed dimensions
     maximizable: false,
+    fullscreenable: false,
     icon: appIcon || appIconPath,
     titleBarStyle: 'hidden',
     webPreferences: {
@@ -61,6 +67,7 @@ function createMainWindow() {
     if (cameraOverlayWindow) cameraOverlayWindow.close();
     if (toolbarWindow) toolbarWindow.close();
     if (regionSelectorWindow) regionSelectorWindow.close();
+    if (cropBorderWindow) cropBorderWindow.close();
   });
 }
 
@@ -100,7 +107,71 @@ function openRegionSelector() {
   });
 }
 
-// Fixed-Size Floating Movable Camera Overlay (Zero Square Shadow / 100% Crisp Shape)
+// Persistent Dotted Border Outline for Custom Crop Area
+function showCropBorder(region) {
+  const primaryDisplay = screen.getPrimaryDisplay();
+  const scale = primaryDisplay.scaleFactor || 1;
+
+  const dipX = Math.round(region.x / scale);
+  const dipY = Math.round(region.y / scale);
+  const dipWidth = Math.round(region.width / scale);
+  const dipHeight = Math.round(region.height / scale);
+
+  if (cropBorderWindow) {
+    cropBorderWindow.setBounds({
+      x: dipX,
+      y: dipY,
+      width: dipWidth,
+      height: dipHeight
+    });
+    cropBorderWindow.show();
+    cropBorderWindow.webContents.send('sync-crop-dimensions', `${region.width} × ${region.height} px`);
+    return;
+  }
+
+  cropBorderWindow = new BrowserWindow({
+    x: dipX,
+    y: dipY,
+    width: dipWidth,
+    height: dipHeight,
+    frame: false,
+    transparent: true,
+    backgroundColor: '#00000000',
+    alwaysOnTop: true,
+    hasShadow: false,
+    skipTaskbar: true,
+    resizable: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true
+    }
+  });
+
+  try {
+    cropBorderWindow.setIgnoreMouseEvents(true); // Click through to background apps!
+    cropBorderWindow.setContentProtection(true); // Invisible in final recorded video!
+  } catch (e) {}
+
+  cropBorderWindow.loadFile(path.join(__dirname, 'src', 'overlays', 'crop-border.html'));
+
+  cropBorderWindow.webContents.on('did-finish-load', () => {
+    cropBorderWindow.webContents.send('sync-crop-dimensions', `${region.width} × ${region.height} px`);
+  });
+
+  cropBorderWindow.on('closed', () => {
+    cropBorderWindow = null;
+  });
+}
+
+function hideCropBorder() {
+  if (cropBorderWindow) {
+    cropBorderWindow.close();
+    cropBorderWindow = null;
+  }
+}
+
+// Fixed-Size Floating Movable Camera Overlay
 function openCameraOverlay(shape = 'circle', size = 190, deviceId = '') {
   if (cameraOverlayWindow) {
     cameraOverlayWindow.show();
@@ -272,6 +343,7 @@ ipcMain.on('recording-stopped', () => {
   if (toolbarWindow) {
     toolbarWindow.close();
   }
+  hideCropBorder();
   if (mainWindow) {
     mainWindow.show();
     mainWindow.focus();
@@ -287,6 +359,7 @@ ipcMain.on('region-selected', (event, region) => {
   if (regionSelectorWindow) {
     regionSelectorWindow.close();
   }
+  showCropBorder(region);
   if (mainWindow) {
     mainWindow.webContents.send('on-region-selected', region);
   }
@@ -296,6 +369,15 @@ ipcMain.on('cancel-region-selector', () => {
   if (regionSelectorWindow) {
     regionSelectorWindow.close();
   }
+});
+
+// Crop Border Controls
+ipcMain.on('show-crop-border', (event, region) => {
+  showCropBorder(region);
+});
+
+ipcMain.on('hide-crop-border', () => {
+  hideCropBorder();
 });
 
 // Camera Overlay Controls

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crop Border Overlay</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    html, body {
+      background: transparent !important;
+      background-color: rgba(0, 0, 0, 0) !important;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      pointer-events: none;
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* Animated Glowing Dotted Border */
+    .crop-border-frame {
+      width: 100%;
+      height: 100%;
+      border: 3px dashed #0A84FF;
+      border-radius: 8px;
+      box-shadow: 
+        inset 0 0 12px rgba(10, 132, 255, 0.3),
+        0 0 16px rgba(10, 132, 255, 0.4);
+      position: relative;
+      animation: dash-pulse 2s infinite linear;
+      pointer-events: none;
+    }
+
+    @keyframes dash-pulse {
+      0% {
+        border-color: #0A84FF;
+        box-shadow: inset 0 0 10px rgba(10, 132, 255, 0.25), 0 0 14px rgba(10, 132, 255, 0.35);
+      }
+      50% {
+        border-color: #5E5CE6;
+        box-shadow: inset 0 0 16px rgba(94, 92, 230, 0.4), 0 0 22px rgba(94, 92, 230, 0.55);
+      }
+      100% {
+        border-color: #0A84FF;
+        box-shadow: inset 0 0 10px rgba(10, 132, 255, 0.25), 0 0 14px rgba(10, 132, 255, 0.35);
+      }
+    }
+
+    /* Top Dimension Badge */
+    .crop-area-badge {
+      position: absolute;
+      top: -28px;
+      left: 10px;
+      background: rgba(10, 132, 255, 0.9);
+      color: white;
+      font-family: 'SF Mono', monospace, 'JetBrains Mono';
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .rec-pulse-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #FF453A;
+      box-shadow: 0 0 6px #FF453A;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* 4 Corner Crop Brackets */
+    .corner {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-color: #FFFFFF;
+      border-style: solid;
+      pointer-events: none;
+    }
+
+    .top-left { top: -2px; left: -2px; border-width: 3px 0 0 3px; border-top-left-radius: 6px; }
+    .top-right { top: -2px; right: -2px; border-width: 3px 3px 0 0; border-top-right-radius: 6px; }
+    .bottom-left { bottom: -2px; left: -2px; border-width: 0 0 3px 3px; border-bottom-left-radius: 6px; }
+    .bottom-right { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; border-bottom-right-radius: 6px; }
+  </style>
+</head>
+<body>
+
+  <div class="crop-border-frame">
+    <div class="crop-area-badge">
+      <span class="rec-pulse-dot"></span>
+      <span id="badge-dim">RECORDING AREA</span>
+    </div>
+
+    <div class="corner top-left"></div>
+    <div class="corner top-right"></div>
+    <div class="corner bottom-left"></div>
+    <div class="corner bottom-right"></div>
+  </div>
+
+  <script>
+    if (window.electronAPI) {
+      window.electronAPI.onSyncCropDimensions((dimStr) => {
+        const badge = document.getElementById('badge-dim');
+        if (badge && dimStr) badge.textContent = dimStr;
+      });
+    }
+  </script>
+</body>
+</html>

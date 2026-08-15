@@ -17,6 +17,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   cancelRegionSelector: () => ipcRenderer.send('cancel-region-selector'),
   onRegionSelected: (callback) => ipcRenderer.on('on-region-selected', (event, region) => callback(region)),
 
+  // Crop Border Outline
+  showCropBorder: (region) => ipcRenderer.send('show-crop-border', region),
+  hideCropBorder: () => ipcRenderer.send('hide-crop-border'),
+  onSyncCropDimensions: (callback) => ipcRenderer.on('sync-crop-dimensions', (event, dimStr) => callback(dimStr)),
+
   // Floating Camera Overlay
   openCameraOverlay: (options) => ipcRenderer.send('open-camera-overlay', options),
   closeCameraOverlay: () => ipcRenderer.send('close-camera-overlay'),
