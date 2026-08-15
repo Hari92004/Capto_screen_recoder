@@ -33,6 +33,7 @@
         0 0 16px rgba(10, 132, 255, 0.35);
       position: relative;
       animation: dash-pulse 2.5s infinite linear;
+      pointer-events: none;
     }
 
     @keyframes dash-pulse {
@@ -63,6 +64,7 @@
       padding: 0 4px;
       -webkit-app-region: drag;
       cursor: move;
+      pointer-events: auto;
     }
 
     .crop-area-badge {
@@ -107,7 +109,7 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    /* 4 Corner Crop Brackets (Visible Style) */
+    /* 4 Corner Crop Brackets */
     .corner {
       position: absolute;
       width: 16px;
@@ -129,19 +131,20 @@
       background: transparent;
       z-index: 10;
       -webkit-app-region: no-drag;
+      pointer-events: auto;
     }
 
-    .handle-nw { top: -6px; left: -6px; width: 18px; height: 18px; cursor: nwse-resize; }
-    .handle-ne { top: -6px; right: -6px; width: 18px; height: 18px; cursor: nesw-resize; }
-    .handle-sw { bottom: -6px; left: -6px; width: 18px; height: 18px; cursor: nesw-resize; }
-    .handle-se { bottom: -6px; right: -6px; width: 18px; height: 18px; cursor: nwse-resize; }
+    .handle-nw { top: -6px; left: -6px; width: 22px; height: 22px; cursor: nwse-resize; }
+    .handle-ne { top: -6px; right: -6px; width: 22px; height: 22px; cursor: nesw-resize; }
+    .handle-sw { bottom: -6px; left: -6px; width: 22px; height: 22px; cursor: nesw-resize; }
+    .handle-se { bottom: -6px; right: -6px; width: 22px; height: 22px; cursor: nwse-resize; }
 
-    .handle-n { top: -4px; left: 16px; right: 16px; height: 10px; cursor: ns-resize; }
-    .handle-s { bottom: -4px; left: 16px; right: 16px; height: 10px; cursor: ns-resize; }
-    .handle-w { left: -4px; top: 16px; bottom: 16px; width: 10px; cursor: ew-resize; }
-    .handle-e { right: -4px; top: 16px; bottom: 16px; width: 10px; cursor: ew-resize; }
+    .handle-n { top: -6px; left: 22px; right: 22px; height: 12px; cursor: ns-resize; }
+    .handle-s { bottom: -6px; left: 22px; right: 22px; height: 12px; cursor: ns-resize; }
+    .handle-w { left: -6px; top: 22px; bottom: 22px; width: 12px; cursor: ew-resize; }
+    .handle-e { right: -6px; top: 22px; bottom: 22px; width: 12px; cursor: ew-resize; }
 
-    /* Visual Indicator Pips on Handles */
+    /* Visual Indicator Pips */
     .pip {
       position: absolute;
       width: 8px;
@@ -159,16 +162,11 @@
     .pip-w { left: -4px; top: calc(50% - 4px); }
     .pip-e { right: -4px; top: calc(50% - 4px); }
 
-    /* When Recording is Active: Lock all handles */
-    body.recording .handle {
-      pointer-events: none !important;
-      display: none !important;
-    }
-    body.recording .crop-top-bar {
-      -webkit-app-region: no-drag !important;
-      cursor: default !important;
-    }
+    /* When Recording is Active */
+    body.recording .handle,
+    body.recording .crop-top-bar,
     body.recording .pip {
+      pointer-events: none !important;
       display: none !important;
     }
   </style>
@@ -216,8 +214,42 @@
     let startMouseY = 0;
 
     const handles = document.querySelectorAll('.handle');
+    const topBar = document.getElementById('crop-top-bar');
     const badge = document.getElementById('badge-dim');
     const hintTag = document.getElementById('hint-tag');
+
+    // Dynamic mouse event pass-through
+    window.addEventListener('mousemove', (e) => {
+      if (document.body.classList.contains('recording')) return;
+
+      if (isDraggingHandle) {
+        const deltaX = e.screenX - startMouseX;
+        const deltaY = e.screenY - startMouseY;
+        startMouseX = e.screenX;
+        startMouseY = e.screenY;
+
+        if (window.electronAPI && window.electronAPI.updateCropBounds) {
+          window.electronAPI.updateCropBounds({
+            handle: currentHandle,
+            deltaX: deltaX,
+            deltaY: deltaY
+          });
+        }
+        return;
+      }
+
+      // Check if mouse is over interactive handles or top bar
+      const isOverInteractive = e.target.classList.contains('handle') || 
+                                e.target.closest('#crop-top-bar') !== null;
+
+      if (window.electronAPI && window.electronAPI.setCropMouseEvents) {
+        if (isOverInteractive) {
+          window.electronAPI.setCropMouseEvents(false); // Enable mouse click on handles
+        } else {
+          window.electronAPI.setCropMouseEvents(true, true); // Pass clicks to underlying apps!
+        }
+      }
+    });
 
     // Handle interactive resizing
     handles.forEach(h => {
@@ -228,29 +260,20 @@
         currentHandle = h.getAttribute('data-handle');
         startMouseX = e.screenX;
         startMouseY = e.screenY;
+        if (window.electronAPI && window.electronAPI.setCropMouseEvents) {
+          window.electronAPI.setCropMouseEvents(false);
+        }
       });
     });
 
-    window.addEventListener('mousemove', (e) => {
-      if (!isDraggingHandle || !currentHandle) return;
-
-      const deltaX = e.screenX - startMouseX;
-      const deltaY = e.screenY - startMouseY;
-      startMouseX = e.screenX;
-      startMouseY = e.screenY;
-
-      if (window.electronAPI && window.electronAPI.updateCropBounds) {
-        window.electronAPI.updateCropBounds({
-          handle: currentHandle,
-          deltaX: deltaX,
-          deltaY: deltaY
-        });
-      }
-    });
-
     window.addEventListener('mouseup', () => {
-      isDraggingHandle = false;
-      currentHandle = null;
+      if (isDraggingHandle) {
+        isDraggingHandle = false;
+        currentHandle = null;
+        if (window.electronAPI && window.electronAPI.setCropMouseEvents) {
+          window.electronAPI.setCropMouseEvents(true, true);
+        }
+      }
     });
 
     if (window.electronAPI) {
@@ -261,6 +284,9 @@
       window.electronAPI.onLockCropBorder(() => {
         document.body.classList.add('recording');
         if (hintTag) hintTag.textContent = 'RECORDING ACTIVE';
+        if (window.electronAPI.setCropMouseEvents) {
+          window.electronAPI.setCropMouseEvents(true, true);
+        }
       });
 
       window.electronAPI.onUnlockCropBorder(() => {

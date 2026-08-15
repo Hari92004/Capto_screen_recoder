@@ -126,7 +126,7 @@ function showCropBorder(region) {
     });
     cropBorderWindow.show();
     try {
-      cropBorderWindow.setIgnoreMouseEvents(false);
+      cropBorderWindow.setIgnoreMouseEvents(true, { forward: true });
     } catch (e) {}
     cropBorderWindow.webContents.send('sync-crop-dimensions', `${region.width} × ${region.height} px`);
     cropBorderWindow.webContents.send('unlock-crop-border');
@@ -153,6 +153,7 @@ function showCropBorder(region) {
   });
 
   try {
+    cropBorderWindow.setIgnoreMouseEvents(true, { forward: true }); // Default pass-through to underlying apps!
     cropBorderWindow.setContentProtection(true); // Invisible in final recorded video!
   } catch (e) {}
 
@@ -357,7 +358,7 @@ ipcMain.on('recording-started', () => {
   if (cropBorderWindow) {
     try {
       cropBorderWindow.webContents.send('lock-crop-border');
-      cropBorderWindow.setIgnoreMouseEvents(true); // Click through to background apps!
+      cropBorderWindow.setIgnoreMouseEvents(true, { forward: false }); // Locked pass-through
     } catch (e) {}
   }
   openToolbar();
@@ -403,6 +404,15 @@ ipcMain.on('show-crop-border', (event, region) => {
 
 ipcMain.on('hide-crop-border', () => {
   hideCropBorder();
+});
+
+// Dynamic Crop Mouse Events
+ipcMain.on('set-crop-mouse-events', (event, { ignore, forward }) => {
+  if (cropBorderWindow) {
+    try {
+      cropBorderWindow.setIgnoreMouseEvents(ignore, { forward: !!forward });
+    } catch (e) {}
+  }
 });
 
 // Interactive Resize Handling
