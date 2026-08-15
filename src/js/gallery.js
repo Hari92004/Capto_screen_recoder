@@ -1,9 +1,9 @@
 /**
- * FLIGO GALLERY CONTROLLER
+ * CAPTO GALLERY CONTROLLER
  * Browse, Playback, and Reveal Saved Recordings
  */
 
-class FligoGallery {
+class CaptoGallery {
   constructor() {
     this.galleryGrid = document.getElementById('gallery-grid');
     this.btnOpenFolder = document.getElementById('btn-open-folder');
@@ -29,10 +29,10 @@ class FligoGallery {
 
     if (recordings.length === 0) {
       this.galleryGrid.innerHTML = `
-        <div style="grid-column: 1 / -1; text-align: center; padding: 40px 20px; color: var(--text-tertiary);">
-          <div style="font-size: 32px; margin-bottom: 8px;">🎬</div>
-          <div style="font-size: 13px; font-weight: 600;">No recordings yet</div>
-          <div style="font-size: 11px;">Your recorded videos will appear here automatically</div>
+        <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-tertiary);">
+          <div style="font-size: 38px; margin-bottom: 10px;">🎬</div>
+          <div style="font-size: 14px; font-weight: 700; color: white;">No recordings yet</div>
+          <div style="font-size: 11px; margin-top: 4px;">Your recorded videos will appear here in high quality</div>
         </div>
       `;
       return;
@@ -52,34 +52,42 @@ class FligoGallery {
       const sizeMb = (rec.sizeBytes / (1024 * 1024)).toFixed(1);
 
       card.innerHTML = `
-        <div class="recording-thumb" title="Click to play">
+        <div class="recording-thumb" title="Click to play / pause">
           <video src="file://${rec.fullPath}" preload="metadata"></video>
-          <div style="position: absolute; font-size: 24px; pointer-events: none; opacity: 0.9;">▶️</div>
+          <div class="play-overlay-pill">▶</div>
         </div>
         <div class="recording-meta">
-          <span style="font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 140px;" title="${rec.filename}">${rec.filename}</span>
-          <span>${sizeMb} MB</span>
+          <span class="rec-title-text" title="${rec.filename}">${rec.filename}</span>
+          <span class="rec-size-badge">${sizeMb} MB</span>
         </div>
         <div class="recording-meta">
           <span style="font-size: 10px; color: var(--text-tertiary);">${dateStr}</span>
-          <button class="glass-btn" style="padding: 2px 8px; font-size: 10px;" data-path="${rec.fullPath}">
+          <button class="glass-action-btn" style="padding: 2px 10px; font-size: 10px;" data-path="${rec.fullPath}">
             Reveal
           </button>
         </div>
       `;
 
-      // Play video on click
+      // Play / Pause video on click
       const thumb = card.querySelector('.recording-thumb');
       const video = card.querySelector('video');
+      const playPill = card.querySelector('.play-overlay-pill');
+
       thumb.addEventListener('click', () => {
         if (video.paused) {
           video.play();
+          playPill.style.display = 'none';
         } else {
           video.pause();
+          playPill.style.display = 'flex';
         }
       });
 
-      // Reveal in explorer
+      video.addEventListener('ended', () => {
+        playPill.style.display = 'flex';
+      });
+
+      // Reveal in file explorer
       const revealBtn = card.querySelector('button[data-path]');
       revealBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -93,5 +101,5 @@ class FligoGallery {
   }
 }
 
-window.fligoGallery = new FligoGallery();
+window.fligoGallery = new CaptoGallery();
 window.refreshGallery = () => window.fligoGallery.loadRecordings();

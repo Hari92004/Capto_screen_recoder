@@ -48,7 +48,7 @@ html, body {
   display: flex;
 }
 
-/* Ambient Backlight Removed so zero side leakage occurs */
+/* Ambient Backlight */
 .ambient-glow {
   display: none !important;
 }
@@ -614,12 +614,12 @@ input:checked + .slider-round:before {
 }
 
 /* ==========================================================================
-   GALLERY / LIBRARY VIEW - FULLY RESPONSIVE AUTO-ADAPTIVE GRID (16:9 RATIO)
+   GALLERY / LIBRARY VIEW - PRO STUDIO 2-COLUMN CARDS WITH CINEMATIC 16:9
    ========================================================================== */
 .gallery-view {
   display: none;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   height: 100%;
 }
 
@@ -629,11 +629,11 @@ input:checked + .slider-round:before {
 
 .gallery-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
   overflow-y: auto;
   padding-right: 4px;
-  align-items: start;
+  align-content: start;
 }
 
 .gallery-grid::-webkit-scrollbar {
@@ -653,6 +653,7 @@ input:checked + .slider-round:before {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 100%;
   transition: transform 0.2s var(--ios-spring), background 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -664,8 +665,7 @@ input:checked + .slider-round:before {
 
 .recording-thumb {
   width: 100%;
-  aspect-ratio: 16 / 9;
-  height: auto;
+  height: 140px;
   background: #000000;
   border-radius: 12px;
   overflow: hidden;
@@ -680,9 +680,34 @@ input:checked + .slider-round:before {
 .recording-thumb video {
   width: 100%;
   height: 100%;
-  aspect-ratio: 16 / 9;
   object-fit: cover;
   border-radius: 12px;
+  display: block;
+}
+
+.play-overlay-pill {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 14px;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.recording-thumb:hover .play-overlay-pill {
+  transform: scale(1.15);
+  background: rgba(10, 132, 255, 0.8);
+  border-color: white;
 }
 
 .recording-meta {
@@ -691,4 +716,24 @@ input:checked + .slider-round:before {
   justify-content: space-between;
   font-size: 11px;
   color: var(--text-secondary);
+}
+
+.rec-title-text {
+  font-weight: 700;
+  font-size: 11px;
+  color: white;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 170px;
+}
+
+.rec-size-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ios-orange);
+  background: rgba(255, 159, 10, 0.15);
+  padding: 2px 6px;
+  border-radius: 6px;
 }
