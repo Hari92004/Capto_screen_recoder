@@ -40,7 +40,8 @@
   },
   "build": {
     "appId": "com.capto.screenrecorder",
-    "productName": "Capto Screen Recorder",
+    "productName": "Capto",
+    "executableName": "Capto",
     "copyright": "Copyright © 2026 Hari",
     "directories": {
       "output": "dist"
