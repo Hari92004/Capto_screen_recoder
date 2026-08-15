@@ -41,7 +41,7 @@
       cursor: grabbing;
     }
 
-    /* Perfect Edge Masking (Zero Square Outer Leak) */
+    /* Perfect Edge Masking */
     .cam-container.shape-circle {
       border-radius: 50%;
       -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 99.5%, transparent 100%);
@@ -141,14 +141,18 @@
     async function initCamera(deviceId = '') {
       try {
         stopStream();
-        const constraints = deviceId
-          ? { deviceId: { exact: deviceId }, width: 1280, height: 720 }
-          : { width: 1280, height: 720 };
-
-        currentStream = await navigator.mediaDevices.getUserMedia({
-          video: constraints,
+        let constraints = {
+          video: { width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: false
-        });
+        };
+        if (deviceId) {
+          constraints.video.deviceId = { ideal: deviceId };
+        }
+        try {
+          currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (e) {
+          currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        }
         video.srcObject = currentStream;
       } catch (err) {
         console.error('Webcam error:', err);

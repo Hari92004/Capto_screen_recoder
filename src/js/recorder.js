@@ -1,6 +1,6 @@
 /**
  * CAPTO RECORDER ENGINE
- * DirectX Screen Capture, Native Resolution Custom Crop Compositor, Mode-Based Filenames & 60FPS MediaRecorder
+ * DirectX Screen Capture, Robust Camera Initializer, Native Resolution Custom Crop Compositor & 60FPS MediaRecorder
  */
 
 class CaptoRecorder {
@@ -60,27 +60,33 @@ class CaptoRecorder {
 
   async startCamera(deviceId = '') {
     try {
-      const targetDeviceId = deviceId || this.cameraDeviceId;
-      const videoConstraints = targetDeviceId
-        ? {
-            deviceId: { exact: targetDeviceId },
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-            frameRate: { ideal: 60 }
-          }
-        : {
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-            frameRate: { ideal: 60 }
-          };
+      if (this.cameraStream && this.cameraStream.getVideoTracks().length > 0 && this.cameraStream.getVideoTracks()[0].readyState === 'live') {
+        return this.cameraStream;
+      }
 
-      this.cameraStream = await navigator.mediaDevices.getUserMedia({
-        video: videoConstraints,
+      const targetDeviceId = deviceId || this.cameraDeviceId;
+      let constraints = {
+        video: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
         audio: false
-      });
+      };
+
+      if (targetDeviceId) {
+        constraints.video.deviceId = { ideal: targetDeviceId };
+      }
+
+      try {
+        this.cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (err1) {
+        console.warn('Camera constraints fallback to standard video:', err1);
+        this.cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      }
+
       return this.cameraStream;
     } catch (err) {
-      console.warn('Webcam not available:', err);
+      console.error('Webcam initialization failed:', err);
       return null;
     }
   }
