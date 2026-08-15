@@ -1,6 +1,6 @@
 /**
  * CAPTO APP CONTROLLER
- * Device Enumeration, Fail-Safe Audio Hotplug, Animated Dotted Crop Border & VU Visualizer
+ * Device Enumeration, Fail-Safe Audio Hotplug, Interactive Resizable Crop Border & VU Visualizer
  */
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -420,7 +420,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (window.electronAPI && window.electronAPI.hideCropBorder) window.electronAPI.hideCropBorder();
 
       if (previewVideo) {
-        previewVideo.style.transform = 'scaleX(-1)'; // Mirrored Selfie View
+        previewVideo.style.transform = 'scaleX(-1)';
         previewVideo.style.filter = `brightness(${sliderBrightness ? sliderBrightness.value : 100}%)`;
       }
 
@@ -485,9 +485,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         previewVideo.play().catch(() => {});
       }
 
-      if (window.fligoRecorder.selectedRegion && window.electronAPI) {
-        window.electronAPI.showCropBorder(window.fligoRecorder.selectedRegion);
-      } else if (window.electronAPI) {
+      // Always close old crop border and open fresh region selector on mode switch
+      if (window.electronAPI) {
+        window.electronAPI.hideCropBorder();
         window.electronAPI.openRegionSelector();
       }
     } else {
@@ -523,12 +523,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // Region Selector Hooks
+  // Region Selector Hooks & Live Position Updates
   if (window.electronAPI) {
     window.electronAPI.onRegionSelected((region) => {
       window.fligoRecorder.setRegion(region);
       regionCoordsText.textContent = `${region.width} × ${region.height} px`;
-      window.electronAPI.showCropBorder(region);
     });
 
     btnReselectRegion.addEventListener('click', () => {

@@ -107,7 +107,7 @@ function openRegionSelector() {
   });
 }
 
-// Persistent Dotted Border Outline for Custom Crop Area
+// Persistent Interactive Dotted Border Outline for Custom Crop Area
 function showCropBorder(region) {
   const primaryDisplay = screen.getPrimaryDisplay();
   const scale = primaryDisplay.scaleFactor || 1;
@@ -125,7 +125,11 @@ function showCropBorder(region) {
       height: dipHeight
     });
     cropBorderWindow.show();
+    try {
+      cropBorderWindow.setIgnoreMouseEvents(false);
+    } catch (e) {}
     cropBorderWindow.webContents.send('sync-crop-dimensions', `${region.width} × ${region.height} px`);
+    cropBorderWindow.webContents.send('unlock-crop-border');
     return;
   }
 
@@ -140,7 +144,7 @@ function showCropBorder(region) {
     alwaysOnTop: true,
     hasShadow: false,
     skipTaskbar: true,
-    resizable: false,
+    resizable: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -149,7 +153,6 @@ function showCropBorder(region) {
   });
 
   try {
-    cropBorderWindow.setIgnoreMouseEvents(true); // Click through to background apps!
     cropBorderWindow.setContentProtection(true); // Invisible in final recorded video!
   } catch (e) {}
 
@@ -157,6 +160,22 @@ function showCropBorder(region) {
 
   cropBorderWindow.webContents.on('did-finish-load', () => {
     cropBorderWindow.webContents.send('sync-crop-dimensions', `${region.width} × ${region.height} px`);
+  });
+
+  // Track window move from dragging title bar
+  cropBorderWindow.on('moved', () => {
+    if (!cropBorderWindow) return;
+    const bounds = cropBorderWindow.getBounds();
+    const primary = screen.getPrimaryDisplay();
+    const currentScale = primary.scaleFactor || 1;
+    const updatedRegion = {
+      x: Math.round(bounds.x * currentScale),
+      y: Math.round(bounds.y * currentScale),
+      width: Math.round(bounds.width * currentScale),
+      height: Math.round(bounds.height * currentScale)
+    };
+    if (mainWindow) mainWindow.webContents.send('on-region-selected', updatedRegion);
+    cropBorderWindow.webContents.send('sync-crop-dimensions', `${updatedRegion.width} × ${updatedRegion.height} px`);
   });
 
   cropBorderWindow.on('closed', () => {
@@ -330,10 +349,16 @@ ipcMain.on('window-close', () => {
   if (mainWindow) mainWindow.close();
 });
 
-// Auto-Hide Main Window Completely on Recording Start
+// Auto-Hide Main Window Completely on Recording Start & Lock Crop Handles
 ipcMain.on('recording-started', () => {
   if (mainWindow) {
     mainWindow.hide();
+  }
+  if (cropBorderWindow) {
+    try {
+      cropBorderWindow.webContents.send('lock-crop-border');
+      cropBorderWindow.setIgnoreMouseEvents(true); // Click through to background apps!
+    } catch (e) {}
   }
   openToolbar();
 });
@@ -378,6 +403,79 @@ ipcMain.on('show-crop-border', (event, region) => {
 
 ipcMain.on('hide-crop-border', () => {
   hideCropBorder();
+});
+
+// Interactive Resize Handling
+ipcMain.on('update-crop-bounds', (event, { handle, deltaX, deltaY }) => {
+  if (!cropBorderWindow) return;
+
+  const bounds = cropBorderWindow.getBounds();
+  let { x, y, width, height } = bounds;
+  const minW = 120;
+  const minH = 90;
+
+  switch (handle) {
+    case 'se':
+      width = Math.max(minW, width + deltaX);
+      height = Math.max(minH, height + deltaY);
+      break;
+    case 'e':
+      width = Math.max(minW, width + deltaX);
+      break;
+    case 's':
+      height = Math.max(minH, height + deltaY);
+      break;
+    case 'sw':
+      if (width - deltaX >= minW) {
+        width -= deltaX;
+        x += deltaX;
+      }
+      height = Math.max(minH, height + deltaY);
+      break;
+    case 'w':
+      if (width - deltaX >= minW) {
+        width -= deltaX;
+        x += deltaX;
+      }
+      break;
+    case 'nw':
+      if (width - deltaX >= minW) {
+        width -= deltaX;
+        x += deltaX;
+      }
+      if (height - deltaY >= minH) {
+        height -= deltaY;
+        y += deltaY;
+      }
+      break;
+    case 'n':
+      if (height - deltaY >= minH) {
+        height -= deltaY;
+        y += deltaY;
+      }
+      break;
+    case 'ne':
+      width = Math.max(minW, width + deltaX);
+      if (height - deltaY >= minH) {
+        height -= deltaY;
+        y += deltaY;
+      }
+      break;
+  }
+
+  cropBorderWindow.setBounds({ x, y, width, height });
+
+  const primary = screen.getPrimaryDisplay();
+  const currentScale = primary.scaleFactor || 1;
+  const updatedRegion = {
+    x: Math.round(x * currentScale),
+    y: Math.round(y * currentScale),
+    width: Math.round(width * currentScale),
+    height: Math.round(height * currentScale)
+  };
+
+  if (mainWindow) mainWindow.webContents.send('on-region-selected', updatedRegion);
+  cropBorderWindow.webContents.send('sync-crop-dimensions', `${updatedRegion.width} × ${updatedRegion.height} px`);
 });
 
 // Camera Overlay Controls

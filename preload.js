@@ -17,10 +17,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   cancelRegionSelector: () => ipcRenderer.send('cancel-region-selector'),
   onRegionSelected: (callback) => ipcRenderer.on('on-region-selected', (event, region) => callback(region)),
 
-  // Crop Border Outline
+  // Crop Border Outline & Interactive Resize
   showCropBorder: (region) => ipcRenderer.send('show-crop-border', region),
   hideCropBorder: () => ipcRenderer.send('hide-crop-border'),
+  updateCropBounds: (bounds) => ipcRenderer.send('update-crop-bounds', bounds),
   onSyncCropDimensions: (callback) => ipcRenderer.on('sync-crop-dimensions', (event, dimStr) => callback(dimStr)),
+  onLockCropBorder: (callback) => ipcRenderer.on('lock-crop-border', () => callback()),
+  onUnlockCropBorder: (callback) => ipcRenderer.on('unlock-crop-border', () => callback()),
 
   // Floating Camera Overlay
   openCameraOverlay: (options) => ipcRenderer.send('open-camera-overlay', options),

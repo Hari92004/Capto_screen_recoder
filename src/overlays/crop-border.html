@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Crop Border Overlay</title>
+  <title>Capto — Custom Crop Area</title>
   <style>
     * {
       box-sizing: border-box;
@@ -19,22 +19,20 @@
       height: 100vh;
       overflow: hidden;
       display: flex;
-      pointer-events: none;
       font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
     }
 
-    /* Animated Glowing Dotted Border */
+    /* Main Container Frame */
     .crop-border-frame {
       width: 100%;
       height: 100%;
       border: 3px dashed #0A84FF;
       border-radius: 8px;
       box-shadow: 
-        inset 0 0 12px rgba(10, 132, 255, 0.3),
-        0 0 16px rgba(10, 132, 255, 0.4);
+        inset 0 0 12px rgba(10, 132, 255, 0.25),
+        0 0 16px rgba(10, 132, 255, 0.35);
       position: relative;
-      animation: dash-pulse 2s infinite linear;
-      pointer-events: none;
+      animation: dash-pulse 2.5s infinite linear;
     }
 
     @keyframes dash-pulse {
@@ -44,7 +42,7 @@
       }
       50% {
         border-color: #5E5CE6;
-        box-shadow: inset 0 0 16px rgba(94, 92, 230, 0.4), 0 0 22px rgba(94, 92, 230, 0.55);
+        box-shadow: inset 0 0 16px rgba(94, 92, 230, 0.4), 0 0 22px rgba(94, 92, 230, 0.5);
       }
       100% {
         border-color: #0A84FF;
@@ -52,12 +50,25 @@
       }
     }
 
-    /* Top Dimension Badge */
-    .crop-area-badge {
+    /* Draggable Top Title Bar */
+    .crop-top-bar {
       position: absolute;
-      top: -28px;
-      left: 10px;
-      background: rgba(10, 132, 255, 0.9);
+      top: -30px;
+      left: 0;
+      right: 0;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+      -webkit-app-region: drag;
+      cursor: move;
+    }
+
+    .crop-area-badge {
+      background: rgba(10, 132, 255, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       color: white;
       font-family: 'SF Mono', monospace, 'JetBrains Mono';
       font-size: 11px;
@@ -66,10 +77,10 @@
       border-radius: 6px;
       letter-spacing: 0.5px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-      pointer-events: none;
       display: flex;
       align-items: center;
       gap: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
     .rec-pulse-dot {
@@ -86,41 +97,175 @@
       50% { opacity: 0.3; }
     }
 
-    /* 4 Corner Crop Brackets */
+    .hint-tag {
+      font-size: 10px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.7);
+      background: rgba(0, 0, 0, 0.6);
+      padding: 2px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* 4 Corner Crop Brackets (Visible Style) */
     .corner {
       position: absolute;
-      width: 14px;
-      height: 14px;
+      width: 16px;
+      height: 16px;
       border-color: #FFFFFF;
       border-style: solid;
       pointer-events: none;
+      z-index: 5;
     }
 
     .top-left { top: -2px; left: -2px; border-width: 3px 0 0 3px; border-top-left-radius: 6px; }
     .top-right { top: -2px; right: -2px; border-width: 3px 3px 0 0; border-top-right-radius: 6px; }
     .bottom-left { bottom: -2px; left: -2px; border-width: 0 0 3px 3px; border-bottom-left-radius: 6px; }
     .bottom-right { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; border-bottom-right-radius: 6px; }
+
+    /* Interactive Resize Handles */
+    .handle {
+      position: absolute;
+      background: transparent;
+      z-index: 10;
+      -webkit-app-region: no-drag;
+    }
+
+    .handle-nw { top: -6px; left: -6px; width: 18px; height: 18px; cursor: nwse-resize; }
+    .handle-ne { top: -6px; right: -6px; width: 18px; height: 18px; cursor: nesw-resize; }
+    .handle-sw { bottom: -6px; left: -6px; width: 18px; height: 18px; cursor: nesw-resize; }
+    .handle-se { bottom: -6px; right: -6px; width: 18px; height: 18px; cursor: nwse-resize; }
+
+    .handle-n { top: -4px; left: 16px; right: 16px; height: 10px; cursor: ns-resize; }
+    .handle-s { bottom: -4px; left: 16px; right: 16px; height: 10px; cursor: ns-resize; }
+    .handle-w { left: -4px; top: 16px; bottom: 16px; width: 10px; cursor: ew-resize; }
+    .handle-e { right: -4px; top: 16px; bottom: 16px; width: 10px; cursor: ew-resize; }
+
+    /* Visual Indicator Pips on Handles */
+    .pip {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: #0A84FF;
+      border: 2px solid white;
+      border-radius: 50%;
+      box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
+      pointer-events: none;
+      z-index: 6;
+    }
+
+    .pip-n { top: -4px; left: calc(50% - 4px); }
+    .pip-s { bottom: -4px; left: calc(50% - 4px); }
+    .pip-w { left: -4px; top: calc(50% - 4px); }
+    .pip-e { right: -4px; top: calc(50% - 4px); }
+
+    /* When Recording is Active: Lock all handles */
+    body.recording .handle {
+      pointer-events: none !important;
+      display: none !important;
+    }
+    body.recording .crop-top-bar {
+      -webkit-app-region: no-drag !important;
+      cursor: default !important;
+    }
+    body.recording .pip {
+      display: none !important;
+    }
   </style>
 </head>
 <body>
 
   <div class="crop-border-frame">
-    <div class="crop-area-badge">
-      <span class="rec-pulse-dot"></span>
-      <span id="badge-dim">RECORDING AREA</span>
+    <!-- Draggable Header -->
+    <div class="crop-top-bar" id="crop-top-bar">
+      <div class="crop-area-badge">
+        <span class="rec-pulse-dot"></span>
+        <span id="badge-dim">CROP AREA</span>
+      </div>
+      <span class="hint-tag" id="hint-tag">Drag bar to move • Drag edges to resize</span>
     </div>
 
+    <!-- Visual Corner Brackets -->
     <div class="corner top-left"></div>
     <div class="corner top-right"></div>
     <div class="corner bottom-left"></div>
     <div class="corner bottom-right"></div>
+
+    <!-- Visual Center Pips -->
+    <div class="pip pip-n"></div>
+    <div class="pip pip-s"></div>
+    <div class="pip pip-w"></div>
+    <div class="pip pip-e"></div>
+
+    <!-- Interactive Resize Handles -->
+    <div class="handle handle-nw" data-handle="nw"></div>
+    <div class="handle handle-ne" data-handle="ne"></div>
+    <div class="handle handle-sw" data-handle="sw"></div>
+    <div class="handle handle-se" data-handle="se"></div>
+
+    <div class="handle handle-n" data-handle="n"></div>
+    <div class="handle handle-s" data-handle="s"></div>
+    <div class="handle handle-w" data-handle="w"></div>
+    <div class="handle handle-e" data-handle="e"></div>
   </div>
 
   <script>
+    let isDraggingHandle = false;
+    let currentHandle = null;
+    let startMouseX = 0;
+    let startMouseY = 0;
+
+    const handles = document.querySelectorAll('.handle');
+    const badge = document.getElementById('badge-dim');
+    const hintTag = document.getElementById('hint-tag');
+
+    // Handle interactive resizing
+    handles.forEach(h => {
+      h.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        isDraggingHandle = true;
+        currentHandle = h.getAttribute('data-handle');
+        startMouseX = e.screenX;
+        startMouseY = e.screenY;
+      });
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDraggingHandle || !currentHandle) return;
+
+      const deltaX = e.screenX - startMouseX;
+      const deltaY = e.screenY - startMouseY;
+      startMouseX = e.screenX;
+      startMouseY = e.screenY;
+
+      if (window.electronAPI && window.electronAPI.updateCropBounds) {
+        window.electronAPI.updateCropBounds({
+          handle: currentHandle,
+          deltaX: deltaX,
+          deltaY: deltaY
+        });
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      isDraggingHandle = false;
+      currentHandle = null;
+    });
+
     if (window.electronAPI) {
       window.electronAPI.onSyncCropDimensions((dimStr) => {
-        const badge = document.getElementById('badge-dim');
         if (badge && dimStr) badge.textContent = dimStr;
+      });
+
+      window.electronAPI.onLockCropBorder(() => {
+        document.body.classList.add('recording');
+        if (hintTag) hintTag.textContent = 'RECORDING ACTIVE';
+      });
+
+      window.electronAPI.onUnlockCropBorder(() => {
+        document.body.classList.remove('recording');
+        if (hintTag) hintTag.textContent = 'Drag bar to move • Drag edges to resize';
       });
     }
   </script>
