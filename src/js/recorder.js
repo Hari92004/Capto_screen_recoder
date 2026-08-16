@@ -70,15 +70,15 @@ class CaptoRecorder {
   }
 
   getCameraFilterString() {
-    const b = this.cameraBrightnessPercent - (this.cameraNoiseReductionPercent * 0.02);
-    const sBlur = (this.cameraSmoothnessPercent / 100) * 1.2 + (this.cameraNoiseReductionPercent / 100) * 0.5;
-    const contrast = 100 + (this.cameraSmoothnessPercent * 0.06) - (this.cameraNoiseReductionPercent * 0.04);
-    const saturate = 100 + (this.cameraSmoothnessPercent * 0.08);
+    let finalBrightness = this.cameraBrightnessPercent + (this.cameraSmoothnessPercent * 0.08) + (this.cameraNoiseReductionPercent * 0.06);
+    let finalContrast = 100 + (this.cameraSmoothnessPercent * 0.05) - (this.cameraNoiseReductionPercent * 0.08);
+    let finalSaturate = 100 + (this.cameraSmoothnessPercent * 0.12) - (this.cameraNoiseReductionPercent * 0.06);
+    let microSoftness = (this.cameraSmoothnessPercent / 100) * 0.25;
 
-    let filters = [`brightness(${b}%)`];
-    if (sBlur > 0.05) filters.push(`blur(${sBlur.toFixed(2)}px)`);
-    if (Math.abs(contrast - 100) > 0.5) filters.push(`contrast(${contrast.toFixed(1)}%)`);
-    if (Math.abs(saturate - 100) > 0.5) filters.push(`saturate(${saturate.toFixed(1)}%)`);
+    let filters = [`brightness(${finalBrightness.toFixed(1)}%)`];
+    if (Math.abs(finalContrast - 100) > 0.5) filters.push(`contrast(${finalContrast.toFixed(1)}%)`);
+    if (Math.abs(finalSaturate - 100) > 0.5) filters.push(`saturate(${finalSaturate.toFixed(1)}%)`);
+    if (microSoftness > 0.04) filters.push(`blur(${microSoftness.toFixed(2)}px)`);
 
     return filters.join(' ');
   }
