@@ -5,7 +5,7 @@ const fs = require('fs');
 // Set Application Name & User Model ID for Windows Taskbar Branding
 app.name = 'Capto';
 if (app.setName) app.setName('Capto');
-app.setAppUserModelId('Capto');
+app.setAppUserModelId('com.capto.screenrecorder');
 
 // Disable WGC and enable DirectX Desktop Duplication
 app.commandLine.appendSwitch('disable-features', 'WebRtcAllowWgcDesktopCapturer,WebRtcAllowWgcScreenCapturer,WebRtcAllowWgcWindowCapturer');
@@ -23,6 +23,25 @@ const icoPath = path.join(__dirname, 'src', 'assets', 'icon.ico');
 const pngPath = path.join(__dirname, 'src', 'assets', 'icon.png');
 const appIconPath = (process.platform === 'win32' && fs.existsSync(icoPath)) ? icoPath : pngPath;
 const appIcon = fs.existsSync(appIconPath) ? nativeImage.createFromPath(appIconPath) : null;
+
+// Ensure Windows Native Start Menu Shortcut & Taskbar JumpList Identity
+if (process.platform === 'win32') {
+  try {
+    const appData = app.getPath('appData');
+    const startMenuDir = path.join(appData, 'Microsoft', 'Windows', 'Start Menu', 'Programs');
+    const shortcutPath = path.join(startMenuDir, 'Capto.lnk');
+    const unpackedExe = path.join(__dirname, 'dist', 'win-unpacked', 'Capto.exe');
+    const targetExe = fs.existsSync(unpackedExe) ? unpackedExe : process.execPath;
+    
+    shell.writeShortcutLink(shortcutPath, 'create', {
+      target: targetExe,
+      description: 'Capto Screen Recorder',
+      icon: icoPath,
+      iconIndex: 0,
+      appUserModelId: 'com.capto.screenrecorder'
+    });
+  } catch (e) {}
+}
 
 // Target Saved Folder: "Screen Recordings" in Videos
 const baseVideoPath = app.getPath('videos') || app.getPath('home');
@@ -64,6 +83,11 @@ function createMainWindow() {
   });
 
   mainWindow.loadFile(path.join(__dirname, 'src', 'index.html'));
+
+  mainWindow.on('page-title-updated', (e) => {
+    e.preventDefault();
+    mainWindow.setTitle('Capto');
+  });
 
   mainWindow.on('closed', () => {
     mainWindow = null;
