@@ -84,6 +84,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     tabGallery.classList.remove('active');
     studioView.style.display = 'flex';
     galleryView.classList.remove('active');
+    if (window.fligoGallery && window.fligoGallery.pauseAllVideos) {
+      window.fligoGallery.pauseAllVideos();
+    }
   });
 
   tabGallery.addEventListener('click', () => {

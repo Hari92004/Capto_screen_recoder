@@ -1,6 +1,6 @@
 /**
  * CAPTO GALLERY CONTROLLER
- * Browse, Playback, and Reveal Saved Recordings
+ * Browse, Single-Video Playback, and Reveal Saved Recordings
  */
 
 class CaptoGallery {
@@ -15,6 +15,18 @@ class CaptoGallery {
         }
       });
     }
+  }
+
+  pauseAllVideos(exceptVideo = null) {
+    if (!this.galleryGrid) return;
+    const allVideos = this.galleryGrid.querySelectorAll('video');
+    allVideos.forEach(v => {
+      if (v !== exceptVideo && !v.paused) {
+        v.pause();
+        const pill = v.parentElement ? v.parentElement.querySelector('.play-overlay-pill') : null;
+        if (pill) pill.style.display = 'flex';
+      }
+    });
   }
 
   async loadRecordings() {
@@ -68,23 +80,32 @@ class CaptoGallery {
         </div>
       `;
 
-      // Play / Pause video on click
       const thumb = card.querySelector('.recording-thumb');
       const video = card.querySelector('video');
       const playPill = card.querySelector('.play-overlay-pill');
 
-      thumb.addEventListener('click', () => {
-        if (video.paused) {
-          video.play();
-          playPill.style.display = 'none';
-        } else {
-          video.pause();
-          playPill.style.display = 'flex';
-        }
+      // Auto-pause all other videos whenever this video starts playing
+      video.addEventListener('play', () => {
+        this.pauseAllVideos(video);
+        playPill.style.display = 'none';
+      });
+
+      video.addEventListener('pause', () => {
+        playPill.style.display = 'flex';
       });
 
       video.addEventListener('ended', () => {
         playPill.style.display = 'flex';
+      });
+
+      // Play / Pause video on thumbnail click
+      thumb.addEventListener('click', () => {
+        if (video.paused) {
+          this.pauseAllVideos(video);
+          video.play().catch(() => {});
+        } else {
+          video.pause();
+        }
       });
 
       // Reveal in file explorer
