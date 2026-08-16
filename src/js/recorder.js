@@ -1,6 +1,6 @@
 /**
  * CAPTO RECORDER ENGINE
- * DirectX Screen Capture, Instant Universal Webcam Stream, Native Resolution Custom Crop & 60FPS 16Mbps MediaRecorder
+ * DirectX Screen Capture, Mirrored Selfie Webcam Compositor, Ultra-HD 16Mbps Bitrate, Real-Time Skin Smoothing & 60FPS MediaRecorder
  */
 
 class CaptoRecorder {
@@ -19,6 +19,8 @@ class CaptoRecorder {
     this.cameraSize = 190;
     this.cameraDeviceId = '';
     this.cameraBrightnessPercent = 100;
+    this.cameraSmoothnessPercent = 0;
+    this.cameraNoiseReductionPercent = 0;
 
     this.screenStream = null;
     this.cameraStream = null;
@@ -55,8 +57,30 @@ class CaptoRecorder {
     this.cameraBrightnessPercent = percent;
   }
 
+  setCameraSmoothness(percent) {
+    this.cameraSmoothnessPercent = percent;
+  }
+
+  setCameraNoiseReduction(percent) {
+    this.cameraNoiseReductionPercent = percent;
+  }
+
   setCameraDeviceId(deviceId) {
     this.cameraDeviceId = deviceId;
+  }
+
+  getCameraFilterString() {
+    const b = this.cameraBrightnessPercent - (this.cameraNoiseReductionPercent * 0.02);
+    const sBlur = (this.cameraSmoothnessPercent / 100) * 1.2 + (this.cameraNoiseReductionPercent / 100) * 0.5;
+    const contrast = 100 + (this.cameraSmoothnessPercent * 0.06) - (this.cameraNoiseReductionPercent * 0.04);
+    const saturate = 100 + (this.cameraSmoothnessPercent * 0.08);
+
+    let filters = [`brightness(${b}%)`];
+    if (sBlur > 0.05) filters.push(`blur(${sBlur.toFixed(2)}px)`);
+    if (Math.abs(contrast - 100) > 0.5) filters.push(`contrast(${contrast.toFixed(1)}%)`);
+    if (Math.abs(saturate - 100) > 0.5) filters.push(`saturate(${saturate.toFixed(1)}%)`);
+
+    return filters.join(' ');
   }
 
   async startCamera(deviceId = '') {
@@ -237,7 +261,7 @@ class CaptoRecorder {
         const canvasStream = this.canvas.captureStream(60);
         videoTrack = canvasStream.getVideoTracks()[0];
       } else if (this.currentMode === 'camera') {
-        // Mirrored Selfie View + Brightness Filter for Webcam Only Recording
+        // Mirrored Selfie View + Brightness & Smoothness Filter for Webcam Only Recording
         if (!this.camVideoElement) {
           this.camVideoElement = document.createElement('video');
           this.camVideoElement.muted = true;
@@ -261,8 +285,8 @@ class CaptoRecorder {
             if (this.camVideoElement && this.camVideoElement.readyState >= 2) {
               this.ctx.save();
               this.ctx.clearRect(0, 0, nativeW, nativeH);
-              // Face Brightness Enhancement
-              this.ctx.filter = `brightness(${this.cameraBrightnessPercent}%)`;
+              // Face Brightness, Smoothness & Noise Reduction Filters
+              this.ctx.filter = this.getCameraFilterString();
               // Natural Horizontal Mirror Flip
               this.ctx.translate(nativeW, 0);
               this.ctx.scale(-1, 1);
@@ -489,7 +513,7 @@ class CaptoRecorder {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     if (this.currentMode === 'camera') {
-      this.ctx.filter = `brightness(${this.cameraBrightnessPercent}%)`;
+      this.ctx.filter = this.getCameraFilterString();
       if (this.cameraStream) {
         const camVideo = document.createElement('video');
         camVideo.muted = true;

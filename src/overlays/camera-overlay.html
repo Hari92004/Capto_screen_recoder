@@ -245,6 +245,25 @@
       stopStream();
     });
 
+    let camBrightness = 100;
+    let camSmoothness = 0;
+    let camNoiseReduction = 0;
+
+    function applyFilters() {
+      if (!video) return;
+      const b = camBrightness - (camNoiseReduction * 0.02);
+      const sBlur = (camSmoothness / 100) * 1.2 + (camNoiseReduction / 100) * 0.5;
+      const contrast = 100 + (camSmoothness * 0.06) - (camNoiseReduction * 0.04);
+      const saturate = 100 + (camSmoothness * 0.08);
+
+      let filters = [`brightness(${b}%)`];
+      if (sBlur > 0.05) filters.push(`blur(${sBlur.toFixed(2)}px)`);
+      if (Math.abs(contrast - 100) > 0.5) filters.push(`contrast(${contrast.toFixed(1)}%)`);
+      if (Math.abs(saturate - 100) > 0.5) filters.push(`saturate(${saturate.toFixed(1)}%)`);
+
+      video.style.filter = filters.join(' ');
+    }
+
     if (window.electronAPI) {
       window.electronAPI.onStopCamFeed(() => {
         stopStream();
@@ -253,6 +272,7 @@
       window.electronAPI.onInitCamSettings(({ shape, deviceId, deviceLabel }) => {
         if (shape) setShape(shape);
         initCamera(deviceId || '', deviceLabel || '');
+        applyFilters();
       });
 
       window.electronAPI.onUpdateCamSettings(({ shape, deviceId, deviceLabel }) => {
@@ -265,7 +285,15 @@
       });
 
       window.electronAPI.onUpdateCamBrightness((val) => {
-        video.style.filter = `brightness(${val}%)`;
+        camBrightness = val;
+        applyFilters();
+      });
+
+      window.electronAPI.onUpdateCamFilters(({ brightness, smoothness, noiseReduction }) => {
+        if (typeof brightness === 'number') camBrightness = brightness;
+        if (typeof smoothness === 'number') camSmoothness = smoothness;
+        if (typeof noiseReduction === 'number') camNoiseReduction = noiseReduction;
+        applyFilters();
       });
     } else {
       initCamera();

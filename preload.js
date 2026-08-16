@@ -32,10 +32,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setCameraShape: (shape) => ipcRenderer.send('set-camera-shape', shape),
   setCameraSize: (size) => ipcRenderer.send('set-camera-size', size),
   setCameraBrightness: (val) => ipcRenderer.send('set-camera-brightness', val),
+  setCameraFilters: (filters) => ipcRenderer.send('set-camera-filters', filters),
   onInitCamSettings: (callback) => ipcRenderer.on('init-cam-settings', (event, data) => callback(data)),
   onUpdateCamSettings: (callback) => ipcRenderer.on('update-cam-settings', (event, data) => callback(data)),
   onUpdateCamShape: (callback) => ipcRenderer.on('update-cam-shape', (event, shape) => callback(shape)),
   onUpdateCamBrightness: (callback) => ipcRenderer.on('update-cam-brightness', (event, val) => callback(val)),
+  onUpdateCamFilters: (callback) => ipcRenderer.on('update-cam-filters', (event, filters) => callback(filters)),
   onStopCamFeed: (callback) => ipcRenderer.on('stop-cam-feed', () => callback()),
 
   // Floating Dynamic Island Toolbar

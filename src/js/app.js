@@ -44,6 +44,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const sliderBrightness = document.getElementById('slider-brightness');
   const brightnessValText = document.getElementById('brightness-val-text');
+  const rowCamBrightness = document.getElementById('row-cam-brightness');
+
+  const sliderSmoothness = document.getElementById('slider-smoothness');
+  const smoothnessValText = document.getElementById('smoothness-val-text');
+  const rowCamSmoothness = document.getElementById('row-cam-smoothness');
+
+  const sliderNoiseReduction = document.getElementById('slider-noise-reduction');
+  const noiseReductionValText = document.getElementById('noise-reduction-val-text');
+  const rowCamNoiseReduction = document.getElementById('row-cam-noise-reduction');
+
   const toggleNoiseSuppression = document.getElementById('toggle-noise-suppression');
   const toggleSilenceRemoval = document.getElementById('toggle-silence-removal');
   const toggleSystemAudio = document.getElementById('toggle-system-audio');
@@ -372,45 +382,85 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Face Camera Brightness Controller
+  // Unified Camera Filter Broadcaster (Brightness, Smoothness & Noise Reduction)
+  function broadcastCameraFilters() {
+    const b = sliderBrightness ? parseInt(sliderBrightness.value) : 100;
+    const s = sliderSmoothness ? parseInt(sliderSmoothness.value) : 0;
+    const n = sliderNoiseReduction ? parseInt(sliderNoiseReduction.value) : 0;
+
+    if (window.fligoRecorder) {
+      window.fligoRecorder.setCameraBrightness(b);
+      window.fligoRecorder.setCameraSmoothness(s);
+      window.fligoRecorder.setCameraNoiseReduction(n);
+    }
+
+    if (window.fligoRecorder.currentMode === 'camera' && previewVideo) {
+      previewVideo.style.filter = window.fligoRecorder.getCameraFilterString();
+    }
+
+    if (window.electronAPI && window.electronAPI.setCameraFilters) {
+      window.electronAPI.setCameraFilters({
+        brightness: b,
+        smoothness: s,
+        noiseReduction: n
+      });
+    }
+  }
+
+  // Camera Sliders Event Listeners
   if (sliderBrightness) {
     sliderBrightness.addEventListener('input', (e) => {
       if (sliderBrightness.disabled) return;
       const val = parseInt(e.target.value);
       if (brightnessValText) brightnessValText.textContent = `${val}%`;
+      broadcastCameraFilters();
+    });
+  }
 
-      if (pipCameraVideo) pipCameraVideo.style.filter = `brightness(${val}%)`;
-      if (window.fligoRecorder.currentMode === 'camera' && previewVideo) {
-        previewVideo.style.filter = `brightness(${val}%)`;
-      } else if (previewVideo) {
-        previewVideo.style.filter = 'none';
-      }
+  if (sliderSmoothness) {
+    sliderSmoothness.addEventListener('input', (e) => {
+      if (sliderSmoothness.disabled) return;
+      const val = parseInt(e.target.value);
+      if (smoothnessValText) smoothnessValText.textContent = `${val}%`;
+      broadcastCameraFilters();
+    });
+  }
 
-      if (window.fligoRecorder) {
-        window.fligoRecorder.setCameraBrightness(val);
-      }
-
-      if (window.electronAPI && window.electronAPI.setCameraBrightness) {
-        window.electronAPI.setCameraBrightness(val);
-      }
+  if (sliderNoiseReduction) {
+    sliderNoiseReduction.addEventListener('input', (e) => {
+      if (sliderNoiseReduction.disabled) return;
+      const val = parseInt(e.target.value);
+      if (noiseReductionValText) noiseReductionValText.textContent = `${val}%`;
+      broadcastCameraFilters();
     });
   }
 
   // Freeze / Unfreeze Camera Controls helper
   function updateCamControlsState(isCameraMode) {
+    const rows = [rowCamBrightness, rowCamSmoothness, rowCamNoiseReduction];
+    const sliders = [sliderBrightness, sliderSmoothness, sliderNoiseReduction];
+
     if (isCameraMode) {
-      if (rowCamBrightness) {
-        rowCamBrightness.style.opacity = '1';
-        rowCamBrightness.style.pointerEvents = 'auto';
-      }
-      if (sliderBrightness) sliderBrightness.disabled = false;
+      rows.forEach(r => {
+        if (r) {
+          r.style.opacity = '1';
+          r.style.pointerEvents = 'auto';
+        }
+      });
+      sliders.forEach(s => {
+        if (s) s.disabled = false;
+      });
       if (groupCamDevice) groupCamDevice.style.display = 'flex';
     } else {
-      if (rowCamBrightness) {
-        rowCamBrightness.style.opacity = '0.35';
-        rowCamBrightness.style.pointerEvents = 'none';
-      }
-      if (sliderBrightness) sliderBrightness.disabled = true;
+      rows.forEach(r => {
+        if (r) {
+          r.style.opacity = '0.35';
+          r.style.pointerEvents = 'none';
+        }
+      });
+      sliders.forEach(s => {
+        if (s) s.disabled = true;
+      });
       if (groupCamDevice) groupCamDevice.style.display = 'none';
     }
   }
@@ -429,7 +479,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       await stopCameraFeeds();
       if (previewVideo) {
         previewVideo.style.transform = 'scaleX(-1)';
-        previewVideo.style.filter = `brightness(${sliderBrightness ? sliderBrightness.value : 100}%)`;
+        previewVideo.style.filter = window.fligoRecorder.getCameraFilterString();
         previewVideo.srcObject = null;
       }
 
@@ -465,6 +515,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           deviceId: selectedCamId,
           deviceLabel: selectedCamLabel
         });
+        broadcastCameraFilters();
       }
     } else if (mode === 'region') {
       pipCameraBox.style.display = 'none';

@@ -455,6 +455,12 @@ ipcMain.on('set-camera-brightness', (event, val) => {
   }
 });
 
+ipcMain.on('set-camera-filters', (event, filters) => {
+  if (cameraOverlayWindow) {
+    cameraOverlayWindow.webContents.send('update-cam-filters', filters);
+  }
+});
+
 // Toolbar Controls
 ipcMain.on('show-toolbar', () => {
   openToolbar();
