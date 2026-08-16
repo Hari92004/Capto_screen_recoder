@@ -62,29 +62,44 @@ class CaptoRecorder {
   async startCamera(deviceId = '') {
     try {
       if (this.cameraStream) {
-        this.cameraStream.getTracks().forEach(t => t.stop());
+        try {
+          this.cameraStream.getTracks().forEach(t => {
+            t.stop();
+            t.enabled = false;
+          });
+        } catch (e) {}
         this.cameraStream = null;
       }
 
+      await new Promise(r => setTimeout(r, 200));
       const targetDeviceId = deviceId || this.cameraDeviceId;
-      let videoConstraints = {
-        width: { ideal: 1280 },
-        height: { ideal: 720 }
-      };
 
       if (targetDeviceId) {
-        videoConstraints.deviceId = { ideal: targetDeviceId };
-      }
-
-      try {
+        try {
+          this.cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              deviceId: { exact: targetDeviceId },
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            },
+            audio: false
+          });
+        } catch (e1) {
+          console.warn('Exact deviceId failed, attempting ideal:', e1);
+          try {
+            this.cameraStream = await navigator.mediaDevices.getUserMedia({
+              video: {
+                deviceId: { ideal: targetDeviceId }
+              },
+              audio: false
+            });
+          } catch (e2) {
+            this.cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          }
+        }
+      } else {
         this.cameraStream = await navigator.mediaDevices.getUserMedia({
-          video: videoConstraints,
-          audio: false
-        });
-      } catch (err1) {
-        console.warn('Ideal camera constraint failed, using direct native video:', err1);
-        this.cameraStream = await navigator.mediaDevices.getUserMedia({
-          video: true,
+          video: { width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: false
         });
       }

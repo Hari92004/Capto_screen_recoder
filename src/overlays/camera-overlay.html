@@ -133,7 +133,10 @@
     function stopStream() {
       if (currentStream) {
         try {
-          currentStream.getTracks().forEach(t => t.stop());
+          currentStream.getTracks().forEach(t => {
+            t.stop();
+            t.enabled = false;
+          });
         } catch (e) {}
         currentStream = null;
       }
@@ -148,22 +151,37 @@
 
       try {
         stopStream();
-        // Give Windows 120ms to release USB hardware lock from previous stream
-        await new Promise(r => setTimeout(r, 120));
+        // Give Windows USB and DroidCam driver 200ms to completely release hardware lock
+        await new Promise(r => setTimeout(r, 200));
 
-        let constraints = {
-          video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-          audio: false
-        };
         if (deviceId) {
-          constraints.video.deviceId = { ideal: deviceId };
-        }
-
-        try {
-          currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-        } catch (e1) {
-          console.warn('Fallback direct video constraint for overlay:', e1);
-          currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          try {
+            currentStream = await navigator.mediaDevices.getUserMedia({
+              video: {
+                deviceId: { exact: deviceId },
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+              },
+              audio: false
+            });
+          } catch (e1) {
+            console.warn('Exact deviceId failed, attempting ideal:', e1);
+            try {
+              currentStream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                  deviceId: { ideal: deviceId }
+                },
+                audio: false
+              });
+            } catch (e2) {
+              currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            }
+          }
+        } else {
+          currentStream = await navigator.mediaDevices.getUserMedia({
+            video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+            audio: false
+          });
         }
 
         if (video && currentStream) {
@@ -215,7 +233,7 @@
 
       window.electronAPI.onUpdateCamSettings(({ shape, deviceId }) => {
         if (shape) setShape(shape);
-        if (deviceId) initCamera(deviceId);
+        initCamera(deviceId || '');
       });
 
       window.electronAPI.onUpdateCamShape((shape) => {

@@ -2,8 +2,10 @@ const { app, BrowserWindow, ipcMain, desktopCapturer, screen, globalShortcut, di
 const path = require('path');
 const fs = require('fs');
 
-// Set Application User Model ID for Windows Taskbar Icon Branding
-app.setAppUserModelId('com.capto.screenrecorder');
+// Set Application Name & User Model ID for Windows Taskbar Branding
+app.name = 'Capto';
+if (app.setName) app.setName('Capto');
+app.setAppUserModelId('Capto');
 
 // Disable WGC and enable DirectX Desktop Duplication
 app.commandLine.appendSwitch('disable-features', 'WebRtcAllowWgcDesktopCapturer,WebRtcAllowWgcScreenCapturer,WebRtcAllowWgcWindowCapturer');
@@ -36,6 +38,7 @@ if (!fs.existsSync(recordingsDir)) {
 
 function createMainWindow() {
   mainWindow = new BrowserWindow({
+    title: 'Capto',
     width: 640,
     height: 740,
     minWidth: 640,
