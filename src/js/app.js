@@ -24,7 +24,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const selectMicDevice = document.getElementById('select-mic-device');
   const selectCamDevice = document.getElementById('select-cam-device');
   const groupCamDevice = document.getElementById('group-cam-device');
-  const rowCamBrightness = document.getElementById('row-cam-brightness');
   const rowCamShape = document.getElementById('row-cam-shape');
   const micStatusLabel = document.getElementById('mic-status-label');
   const vuMeterFill = document.getElementById('vu-meter-fill');
