@@ -30,19 +30,19 @@
       height: 100%;
       position: relative;
       overflow: hidden;
-      background: #000000;
-      border: 3px solid rgba(255, 255, 255, 0.4);
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
       -webkit-app-region: drag;
       cursor: grab;
-      transition: border-radius 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(0, 0, 0, 0.5);
+      transition: border-radius 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     .cam-container:active {
       cursor: grabbing;
     }
 
-    /* Perfect Edge Masking */
+    /* Perfect Edge Masking with Zero Outlines */
     .cam-container.shape-circle {
       border-radius: 50%;
       -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 99.5%, transparent 100%);
@@ -66,6 +66,7 @@
       border-radius: inherit;
       transition: filter 0.1s ease;
       display: block;
+      background: transparent !important;
     }
 
     /* Hover Controls */
