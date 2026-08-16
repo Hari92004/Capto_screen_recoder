@@ -184,10 +184,10 @@ function hideCropBorder() {
 }
 
 // Fixed-Size Floating Movable Camera Overlay
-function openCameraOverlay(shape = 'circle', size = 190, deviceId = '') {
+function openCameraOverlay(shape = 'circle', size = 190, deviceId = '', deviceLabel = '') {
   if (cameraOverlayWindow) {
     cameraOverlayWindow.show();
-    cameraOverlayWindow.webContents.send('update-cam-settings', { shape, size, deviceId });
+    cameraOverlayWindow.webContents.send('update-cam-settings', { shape, size, deviceId, deviceLabel });
     return;
   }
 
@@ -217,7 +217,7 @@ function openCameraOverlay(shape = 'circle', size = 190, deviceId = '') {
   cameraOverlayWindow.loadFile(path.join(__dirname, 'src', 'overlays', 'camera-overlay.html'));
 
   cameraOverlayWindow.webContents.on('did-finish-load', () => {
-    cameraOverlayWindow.webContents.send('init-cam-settings', { shape, size, deviceId });
+    cameraOverlayWindow.webContents.send('init-cam-settings', { shape, size, deviceId, deviceLabel });
   });
 
   cameraOverlayWindow.on('closed', () => {
@@ -399,8 +399,8 @@ ipcMain.on('hide-crop-border', () => {
 });
 
 // Camera Overlay Controls
-ipcMain.on('open-camera-overlay', (event, { shape, size, deviceId }) => {
-  openCameraOverlay(shape, size, deviceId);
+ipcMain.on('open-camera-overlay', (event, { shape, size, deviceId, deviceLabel }) => {
+  openCameraOverlay(shape, size, deviceId, deviceLabel);
 });
 
 ipcMain.on('close-camera-overlay', () => {

@@ -146,20 +146,43 @@
       }
     }
 
-    async function initCamera(deviceId = '') {
+    async function initCamera(targetDeviceId = '', targetLabel = '') {
       if (isInitializing) return;
       isInitializing = true;
 
       try {
         stopStream();
-        // Give Windows USB and DroidCam driver 200ms to completely release hardware lock
-        await new Promise(r => setTimeout(r, 200));
+        // Give Windows USB and DroidCam driver 180ms to completely release hardware lock
+        await new Promise(r => setTimeout(r, 180));
 
-        if (deviceId) {
+        // Enumerate local devices in this window to resolve exact local device ID
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(d => d.kind === 'videoinput');
+
+        let matchedDevice = null;
+        if (targetLabel) {
+          const cleanLabel = targetLabel.trim().toLowerCase();
+          matchedDevice = videoDevices.find(d => d.label && d.label.trim().toLowerCase() === cleanLabel);
+          if (!matchedDevice) {
+            matchedDevice = videoDevices.find(d => d.label && (d.label.toLowerCase().includes(cleanLabel) || cleanLabel.includes(d.label.toLowerCase())));
+          }
+        }
+
+        if (!matchedDevice && targetDeviceId) {
+          matchedDevice = videoDevices.find(d => d.deviceId === targetDeviceId);
+        }
+
+        if (!matchedDevice && videoDevices.length > 0) {
+          matchedDevice = videoDevices[0];
+        }
+
+        const localId = matchedDevice ? matchedDevice.deviceId : targetDeviceId;
+
+        if (localId) {
           try {
             currentStream = await navigator.mediaDevices.getUserMedia({
               video: {
-                deviceId: { exact: deviceId },
+                deviceId: { exact: localId },
                 width: { ideal: 1280 },
                 height: { ideal: 720 }
               },
@@ -170,7 +193,7 @@
             try {
               currentStream = await navigator.mediaDevices.getUserMedia({
                 video: {
-                  deviceId: { ideal: deviceId }
+                  deviceId: { ideal: localId }
                 },
                 audio: false
               });
@@ -227,14 +250,14 @@
         stopStream();
       });
 
-      window.electronAPI.onInitCamSettings(({ shape, deviceId }) => {
+      window.electronAPI.onInitCamSettings(({ shape, deviceId, deviceLabel }) => {
         if (shape) setShape(shape);
-        initCamera(deviceId || '');
+        initCamera(deviceId || '', deviceLabel || '');
       });
 
-      window.electronAPI.onUpdateCamSettings(({ shape, deviceId }) => {
+      window.electronAPI.onUpdateCamSettings(({ shape, deviceId, deviceLabel }) => {
         if (shape) setShape(shape);
-        initCamera(deviceId || '');
+        initCamera(deviceId || '', deviceLabel || '');
       });
 
       window.electronAPI.onUpdateCamShape((shape) => {

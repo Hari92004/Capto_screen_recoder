@@ -331,6 +331,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   selectCamDevice.addEventListener('change', async (e) => {
     selectedCamId = e.target.value;
+    const selectedCamLabel = selectCamDevice.options[selectCamDevice.selectedIndex] ? selectCamDevice.options[selectCamDevice.selectedIndex].text : '';
     window.fligoRecorder.setCameraDeviceId(selectedCamId);
 
     if (window.fligoRecorder.currentMode === 'camera') {
@@ -345,7 +346,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.electronAPI.openCameraOverlay({
           shape: window.fligoRecorder.cameraShape,
           size: window.fligoRecorder.cameraSize,
-          deviceId: selectedCamId
+          deviceId: selectedCamId,
+          deviceLabel: selectedCamLabel
         });
       }
     }
@@ -455,11 +457,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         previewVideo.play().catch(() => {});
       }
 
+      const selectedCamLabel = selectCamDevice.options[selectCamDevice.selectedIndex] ? selectCamDevice.options[selectCamDevice.selectedIndex].text : '';
       if (window.electronAPI) {
         window.electronAPI.openCameraOverlay({
           shape: window.fligoRecorder.cameraShape,
           size: window.fligoRecorder.cameraSize,
-          deviceId: selectedCamId
+          deviceId: selectedCamId,
+          deviceLabel: selectedCamLabel
         });
       }
     } else if (mode === 'region') {
