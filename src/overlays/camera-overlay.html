@@ -30,11 +30,12 @@
       height: 100%;
       position: relative;
       overflow: hidden;
-      background: transparent;
-      border: none;
+      background: #000000;
+      border: 3px solid rgba(255, 255, 255, 0.4);
       -webkit-app-region: drag;
       cursor: grab;
-      transition: border-radius 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: border-radius 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(0, 0, 0, 0.5);
     }
 
     .cam-container:active {
@@ -88,10 +89,10 @@
       width: 24px;
       height: 24px;
       border-radius: 50%;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.75);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.35);
       color: white;
       font-size: 11px;
       display: flex;
@@ -127,10 +128,13 @@
     const shapes = ['circle', 'rounded', 'rect'];
     let currentShapeIndex = 0;
     let currentStream = null;
+    let isInitializing = false;
 
     function stopStream() {
       if (currentStream) {
-        currentStream.getTracks().forEach(t => t.stop());
+        try {
+          currentStream.getTracks().forEach(t => t.stop());
+        } catch (e) {}
         currentStream = null;
       }
       if (video) {
@@ -139,8 +143,14 @@
     }
 
     async function initCamera(deviceId = '') {
+      if (isInitializing) return;
+      isInitializing = true;
+
       try {
         stopStream();
+        // Give Windows 120ms to release USB hardware lock from previous stream
+        await new Promise(r => setTimeout(r, 120));
+
         let constraints = {
           video: { width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: false
@@ -148,14 +158,22 @@
         if (deviceId) {
           constraints.video.deviceId = { ideal: deviceId };
         }
+
         try {
           currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-        } catch (e) {
+        } catch (e1) {
+          console.warn('Fallback direct video constraint for overlay:', e1);
           currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
         }
-        video.srcObject = currentStream;
+
+        if (video && currentStream) {
+          video.srcObject = currentStream;
+          video.play().catch(() => {});
+        }
       } catch (err) {
-        console.error('Webcam error:', err);
+        console.error('Webcam error in camera overlay:', err);
+      } finally {
+        isInitializing = false;
       }
     }
 

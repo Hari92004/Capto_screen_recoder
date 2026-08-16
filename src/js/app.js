@@ -332,16 +332,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   selectCamDevice.addEventListener('change', async (e) => {
     selectedCamId = e.target.value;
     window.fligoRecorder.setCameraDeviceId(selectedCamId);
-    if (window.fligoRecorder.currentMode === 'dual' || window.fligoRecorder.currentMode === 'camera') {
+
+    if (window.fligoRecorder.currentMode === 'camera') {
       await stopCameraFeeds();
-      const newCamStream = await window.fligoRecorder.startCamera(selectedCamId);
-      currentCamStream = newCamStream;
-      if (newCamStream) {
-        if (window.fligoRecorder.currentMode === 'camera') {
-          previewVideo.srcObject = newCamStream;
-        } else {
-          pipCameraVideo.srcObject = newCamStream;
-        }
+      currentCamStream = await window.fligoRecorder.startCamera(selectedCamId);
+      if (currentCamStream && previewVideo) {
+        previewVideo.srcObject = currentCamStream;
+        previewVideo.play().catch(() => {});
+      }
+    } else if (window.fligoRecorder.currentMode === 'dual') {
+      if (window.electronAPI && window.electronAPI.openCameraOverlay) {
+        window.electronAPI.openCameraOverlay({
+          shape: window.fligoRecorder.cameraShape,
+          size: window.fligoRecorder.cameraSize,
+          deviceId: selectedCamId
+        });
       }
     }
   });
@@ -432,7 +437,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         previewVideo.play().catch(() => {});
       }
     } else if (mode === 'dual') {
-      pipCameraBox.style.display = 'block';
+      pipCameraBox.style.display = 'none';
       regionActionBar.style.display = 'none';
       rowCamShape.style.display = 'flex';
       updateCamControlsState(true);
@@ -442,22 +447,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         previewVideo.style.filter = 'none';
         previewVideo.style.transform = 'none';
       }
-      if (pipCameraVideo) {
-        pipCameraVideo.style.filter = `brightness(${sliderBrightness ? sliderBrightness.value : 100}%)`;
-        pipCameraVideo.style.transform = 'scaleX(-1)';
-      }
 
       await stopCameraFeeds();
       currentScreenStream = await window.fligoRecorder.startScreenStream();
-      if (currentScreenStream) {
+      if (currentScreenStream && previewVideo) {
         previewVideo.srcObject = currentScreenStream;
         previewVideo.play().catch(() => {});
-      }
-
-      currentCamStream = await window.fligoRecorder.startCamera(selectedCamId);
-      if (currentCamStream) {
-        pipCameraVideo.srcObject = currentCamStream;
-        pipCameraVideo.play().catch(() => {});
       }
 
       if (window.electronAPI) {
