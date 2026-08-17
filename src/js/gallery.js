@@ -5,38 +5,54 @@
 
 class CaptoGallery {
   constructor() {
+    this.galleryGrid = null;
+    this.btnOpenFolder = null;
+    this.btnClearLibrary = null;
+    this.currentFilter = 'all'; // 'all' | 'video' | 'voice'
+    this.isInitialized = false;
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => this.init());
+    } else {
+      this.init();
+    }
+  }
+
+  init() {
+    if (this.isInitialized) return;
+    this.isInitialized = true;
+
     this.galleryGrid = document.getElementById('gallery-grid');
     this.btnOpenFolder = document.getElementById('btn-open-folder');
     this.btnClearLibrary = document.getElementById('btn-clear-library');
-    this.currentFilter = 'all'; // 'all' | 'video' | 'voice'
 
     if (this.btnOpenFolder) {
-      this.btnOpenFolder.addEventListener('click', () => {
+      this.btnOpenFolder.onclick = () => {
         if (window.electronAPI) {
           window.electronAPI.openRecordingsFolder();
         }
-      });
+      };
     }
 
     if (this.btnClearLibrary) {
-      this.btnClearLibrary.addEventListener('click', async () => {
+      this.btnClearLibrary.onclick = async () => {
         const confirmClear = confirm('Are you sure you want to remove all recordings from the Studio Library? This will permanently delete the files.');
         if (confirmClear && window.electronAPI && window.electronAPI.clearAllRecordings) {
           await window.electronAPI.clearAllRecordings();
           this.loadRecordings();
         }
-      });
+      };
     }
 
     // Filter Buttons
     const filterBtns = document.querySelectorAll('.lib-filter-btn');
     filterBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.onclick = () => {
         filterBtns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         this.currentFilter = btn.dataset.filter || 'all';
         this.loadRecordings();
-      });
+      };
     });
 
     // Initial Load
@@ -262,6 +278,9 @@ class CaptoGallery {
   }
 
   async loadRecordings() {
+    if (!this.galleryGrid) {
+      this.galleryGrid = document.getElementById('gallery-grid');
+    }
     if (!this.galleryGrid) return;
 
     let recordings = [];
