@@ -71,6 +71,196 @@ class CaptoGallery {
     this.pauseAllMedia();
   }
 
+  createVoiceCard(rec) {
+    const dateStr = new Date(rec.createdAt).toLocaleDateString([], {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    const sizeMb = (rec.sizeBytes / (1024 * 1024)).toFixed(1);
+    const normalizedPath = rec.fullPath.replace(/\\/g, '/');
+    const fileUrl = normalizedPath.startsWith('/') ? `file://${normalizedPath}` : `file:///${normalizedPath}`;
+
+    const card = document.createElement('div');
+    card.className = 'recording-card audio-recording-card';
+    card.innerHTML = `
+      <div class="audio-card-body" title="Click to play / pause voice recording">
+        <audio src="${fileUrl}" preload="metadata"></audio>
+        <div class="audio-main-row">
+          <button class="audio-play-btn" title="Play / Pause">▶</button>
+          <div class="audio-info-col">
+            <span class="rec-title-text" title="${rec.filename}">${rec.filename}</span>
+            <span class="audio-tag-pill">🎙️ AI ANC Voice Clip</span>
+          </div>
+        </div>
+        <div class="audio-wave-anim">
+          <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+      </div>
+      <div class="recording-meta">
+        <span style="font-size: 10px; color: var(--text-tertiary);">${dateStr}</span>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <span class="rec-size-badge">${sizeMb} MB</span>
+          <button class="glass-action-btn" style="padding: 2px 8px; font-size: 10px;" data-path="${rec.fullPath}" title="Reveal in File Explorer">
+            📁
+          </button>
+          <button class="glass-action-btn card-delete-btn" style="padding: 2px 8px; font-size: 10px; color: #FF453A;" data-delete-path="${rec.fullPath}" title="Delete Recording">
+            🗑️
+          </button>
+        </div>
+      </div>
+    `;
+
+    const audio = card.querySelector('audio');
+    const playBtn = card.querySelector('.audio-play-btn');
+    const waveAnim = card.querySelector('.audio-wave-anim');
+    const cardBody = card.querySelector('.audio-card-body');
+
+    const toggleAudioPlay = () => {
+      if (audio.paused) {
+        this.pauseAllMedia(audio);
+        audio.play().catch(() => {});
+        playBtn.textContent = '⏸';
+        waveAnim.classList.add('playing');
+      } else {
+        audio.pause();
+        playBtn.textContent = '▶';
+        waveAnim.classList.remove('playing');
+      }
+    };
+
+    playBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleAudioPlay();
+    });
+
+    cardBody.addEventListener('click', () => {
+      toggleAudioPlay();
+    });
+
+    audio.addEventListener('ended', () => {
+      playBtn.textContent = '▶';
+      waveAnim.classList.remove('playing');
+    });
+
+    audio.addEventListener('pause', () => {
+      playBtn.textContent = '▶';
+      waveAnim.classList.remove('playing');
+    });
+
+    return card;
+  }
+
+  createPhotoCard(rec) {
+    const dateStr = new Date(rec.createdAt).toLocaleDateString([], {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    const sizeMb = (rec.sizeBytes / (1024 * 1024)).toFixed(1);
+    const normalizedPath = rec.fullPath.replace(/\\/g, '/');
+    const fileUrl = normalizedPath.startsWith('/') ? `file://${normalizedPath}` : `file:///${normalizedPath}`;
+
+    const card = document.createElement('div');
+    card.className = 'recording-card';
+    card.innerHTML = `
+      <div class="recording-thumb" title="Click to view photo">
+        <img src="${fileUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;" alt="Screenshot">
+        <div class="play-overlay-pill" style="font-size: 11px;">📸 View</div>
+      </div>
+      <div class="recording-meta">
+        <span class="rec-title-text" title="${rec.filename}">${rec.filename}</span>
+        <span class="rec-size-badge">${sizeMb} MB</span>
+      </div>
+      <div class="recording-meta">
+        <span style="font-size: 10px; color: var(--text-tertiary);">${dateStr}</span>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <button class="glass-action-btn" style="padding: 2px 8px; font-size: 10px;" data-path="${rec.fullPath}" title="Reveal in File Explorer">
+            📁 Reveal
+          </button>
+          <button class="glass-action-btn card-delete-btn" style="padding: 2px 8px; font-size: 10px; color: #FF453A;" data-delete-path="${rec.fullPath}" title="Delete Screenshot">
+            🗑️
+          </button>
+        </div>
+      </div>
+    `;
+
+    const thumb = card.querySelector('.recording-thumb');
+    thumb.addEventListener('click', () => {
+      if (window.electronAPI) {
+        window.electronAPI.revealFile(rec.fullPath);
+      }
+    });
+
+    return card;
+  }
+
+  createVideoCard(rec) {
+    const dateStr = new Date(rec.createdAt).toLocaleDateString([], {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    const sizeMb = (rec.sizeBytes / (1024 * 1024)).toFixed(1);
+    const normalizedPath = rec.fullPath.replace(/\\/g, '/');
+    const fileUrl = normalizedPath.startsWith('/') ? `file://${normalizedPath}` : `file:///${normalizedPath}`;
+
+    const card = document.createElement('div');
+    card.className = 'recording-card';
+    card.innerHTML = `
+      <div class="recording-thumb" title="Click to play / pause">
+        <video src="${fileUrl}" preload="metadata"></video>
+        <div class="play-overlay-pill">▶</div>
+      </div>
+      <div class="recording-meta">
+        <span class="rec-title-text" title="${rec.filename}">${rec.filename}</span>
+        <span class="rec-size-badge">${sizeMb} MB</span>
+      </div>
+      <div class="recording-meta">
+        <span style="font-size: 10px; color: var(--text-tertiary);">${dateStr}</span>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <button class="glass-action-btn" style="padding: 2px 8px; font-size: 10px;" data-path="${rec.fullPath}" title="Reveal in File Explorer">
+            📁 Reveal
+          </button>
+          <button class="glass-action-btn card-delete-btn" style="padding: 2px 8px; font-size: 10px; color: #FF453A;" data-delete-path="${rec.fullPath}" title="Delete Recording">
+            🗑️
+          </button>
+        </div>
+      </div>
+    `;
+
+    const thumb = card.querySelector('.recording-thumb');
+    const video = card.querySelector('video');
+    const playPill = card.querySelector('.play-overlay-pill');
+
+    video.addEventListener('play', () => {
+      this.pauseAllMedia(video);
+      playPill.style.display = 'none';
+    });
+
+    video.addEventListener('pause', () => {
+      playPill.style.display = 'flex';
+    });
+
+    video.addEventListener('ended', () => {
+      playPill.style.display = 'flex';
+    });
+
+    thumb.addEventListener('click', () => {
+      if (video.paused) {
+        this.pauseAllMedia(video);
+        video.play().catch(() => {});
+      } else {
+        video.pause();
+      }
+    });
+
+    return card;
+  }
+
   async loadRecordings() {
     if (!this.galleryGrid) return;
 
@@ -81,219 +271,110 @@ class CaptoGallery {
 
     this.galleryGrid.innerHTML = '';
 
-    // Apply Category Filter
-    let filtered = recordings;
-    if (this.currentFilter === 'video') {
-      filtered = recordings.filter(r => !r.filename.includes('Voice') && !r.filename.endsWith('.wav'));
-    } else if (this.currentFilter === 'voice') {
-      filtered = recordings.filter(r => r.filename.includes('Voice') || r.filename.endsWith('.wav'));
-    }
-
-    if (filtered.length === 0) {
-      const emptyEmoji = this.currentFilter === 'voice' ? '🎙️' : (this.currentFilter === 'video' ? '🎬' : '📁');
-      const emptyText = this.currentFilter === 'voice' ? 'No voice recordings yet' : (this.currentFilter === 'video' ? 'No video recordings yet' : 'No recordings in library yet');
-
+    if (recordings.length === 0) {
       this.galleryGrid.innerHTML = `
         <div style="grid-column: 1 / -1; text-align: center; padding: 50px 20px; color: var(--text-tertiary);">
-          <div style="font-size: 36px; margin-bottom: 8px;">${emptyEmoji}</div>
-          <div style="font-size: 14px; font-weight: 700; color: white;">${emptyText}</div>
-          <div style="font-size: 11px; margin-top: 4px;">Recordings will appear here in high quality</div>
+          <div style="font-size: 36px; margin-bottom: 8px;">📁</div>
+          <div style="font-size: 14px; font-weight: 700; color: white;">No recordings in library yet</div>
+          <div style="font-size: 11px; margin-top: 4px;">Recordings and voice notes will appear here automatically</div>
         </div>
       `;
       return;
     }
 
-    filtered.forEach(rec => {
-      const isVoice = rec.filename.includes('Voice') || rec.filename.endsWith('.wav');
-      const isPhoto = rec.filename.endsWith('.png');
-      const card = document.createElement('div');
-      card.className = isVoice ? 'recording-card audio-recording-card' : 'recording-card';
+    const videos = recordings.filter(r => !r.filename.includes('Voice') && !r.filename.endsWith('.wav') && !r.filename.endsWith('.png'));
+    const voiceNotes = recordings.filter(r => r.filename.includes('Voice') || r.filename.endsWith('.wav'));
+    const photos = recordings.filter(r => r.filename.endsWith('.png'));
 
-      const dateStr = new Date(rec.createdAt).toLocaleDateString([], {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+    const attachCardListeners = (container) => {
+      const revealBtns = container.querySelectorAll('button[data-path]');
+      revealBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (window.electronAPI) {
+            window.electronAPI.revealFile(btn.dataset.path);
+          }
+        });
       });
 
-      const sizeMb = (rec.sizeBytes / (1024 * 1024)).toFixed(1);
-      const normalizedPath = rec.fullPath.replace(/\\/g, '/');
-      const fileUrl = normalizedPath.startsWith('/') ? `file://${normalizedPath}` : `file:///${normalizedPath}`;
-
-      if (isVoice) {
-        // Voice Audio Card Layout
-        card.innerHTML = `
-          <div class="audio-card-body" title="Click to play / pause voice recording">
-            <audio src="${fileUrl}" preload="metadata"></audio>
-            <div class="audio-main-row">
-              <button class="audio-play-btn" title="Play / Pause">▶</button>
-              <div class="audio-info-col">
-                <span class="rec-title-text" title="${rec.filename}">${rec.filename}</span>
-                <span class="audio-tag-pill">🎙️ AI ANC Voice Clip</span>
-              </div>
-            </div>
-            <div class="audio-wave-anim">
-              <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-            </div>
-          </div>
-          <div class="recording-meta">
-            <span style="font-size: 10px; color: var(--text-tertiary);">${dateStr}</span>
-            <div style="display: flex; gap: 6px; align-items: center;">
-              <span class="rec-size-badge">${sizeMb} MB</span>
-              <button class="glass-action-btn" style="padding: 2px 8px; font-size: 10px;" data-path="${rec.fullPath}" title="Reveal in File Explorer">
-                📁
-              </button>
-              <button class="glass-action-btn card-delete-btn" style="padding: 2px 8px; font-size: 10px; color: #FF453A;" data-delete-path="${rec.fullPath}" title="Delete Recording">
-                🗑️
-              </button>
-            </div>
-          </div>
-        `;
-
-        const audio = card.querySelector('audio');
-        const playBtn = card.querySelector('.audio-play-btn');
-        const waveAnim = card.querySelector('.audio-wave-anim');
-        const cardBody = card.querySelector('.audio-card-body');
-
-        const toggleAudioPlay = () => {
-          if (audio.paused) {
-            this.pauseAllMedia(audio);
-            audio.play().catch(() => {});
-            playBtn.textContent = '⏸';
-            waveAnim.classList.add('playing');
-          } else {
-            audio.pause();
-            playBtn.textContent = '▶';
-            waveAnim.classList.remove('playing');
-          }
-        };
-
-        playBtn.addEventListener('click', (e) => {
+      const deleteBtns = container.querySelectorAll('button[data-delete-path]');
+      deleteBtns.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
           e.stopPropagation();
-          toggleAudioPlay();
-        });
-
-        cardBody.addEventListener('click', () => {
-          toggleAudioPlay();
-        });
-
-        audio.addEventListener('ended', () => {
-          playBtn.textContent = '▶';
-          waveAnim.classList.remove('playing');
-        });
-
-        audio.addEventListener('pause', () => {
-          playBtn.textContent = '▶';
-          waveAnim.classList.remove('playing');
-        });
-
-      } else if (isPhoto) {
-        // Screenshot Photo Card Layout
-        card.innerHTML = `
-          <div class="recording-thumb" title="Click to view photo">
-            <img src="${fileUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;" alt="Screenshot">
-            <div class="play-overlay-pill" style="font-size: 11px;">📸 View</div>
-          </div>
-          <div class="recording-meta">
-            <span class="rec-title-text" title="${rec.filename}">${rec.filename}</span>
-            <span class="rec-size-badge">${sizeMb} MB</span>
-          </div>
-          <div class="recording-meta">
-            <span style="font-size: 10px; color: var(--text-tertiary);">${dateStr}</span>
-            <div style="display: flex; gap: 6px; align-items: center;">
-              <button class="glass-action-btn" style="padding: 2px 8px; font-size: 10px;" data-path="${rec.fullPath}" title="Reveal in File Explorer">
-                📁 Reveal
-              </button>
-              <button class="glass-action-btn card-delete-btn" style="padding: 2px 8px; font-size: 10px; color: #FF453A;" data-delete-path="${rec.fullPath}" title="Delete Screenshot">
-                🗑️
-              </button>
-            </div>
-          </div>
-        `;
-
-        const thumb = card.querySelector('.recording-thumb');
-        thumb.addEventListener('click', () => {
-          if (window.electronAPI) {
-            window.electronAPI.revealFile(rec.fullPath);
-          }
-        });
-      } else {
-        // Video Card Layout
-        card.innerHTML = `
-          <div class="recording-thumb" title="Click to play / pause">
-            <video src="${fileUrl}" preload="metadata"></video>
-            <div class="play-overlay-pill">▶</div>
-          </div>
-          <div class="recording-meta">
-            <span class="rec-title-text" title="${rec.filename}">${rec.filename}</span>
-            <span class="rec-size-badge">${sizeMb} MB</span>
-          </div>
-          <div class="recording-meta">
-            <span style="font-size: 10px; color: var(--text-tertiary);">${dateStr}</span>
-            <div style="display: flex; gap: 6px; align-items: center;">
-              <button class="glass-action-btn" style="padding: 2px 8px; font-size: 10px;" data-path="${rec.fullPath}" title="Reveal in File Explorer">
-                📁 Reveal
-              </button>
-              <button class="glass-action-btn card-delete-btn" style="padding: 2px 8px; font-size: 10px; color: #FF453A;" data-delete-path="${rec.fullPath}" title="Delete Recording">
-                🗑️
-              </button>
-            </div>
-          </div>
-        `;
-
-        const thumb = card.querySelector('.recording-thumb');
-        const video = card.querySelector('video');
-        const playPill = card.querySelector('.play-overlay-pill');
-
-        video.addEventListener('play', () => {
-          this.pauseAllMedia(video);
-          playPill.style.display = 'none';
-        });
-
-        video.addEventListener('pause', () => {
-          playPill.style.display = 'flex';
-        });
-
-        video.addEventListener('ended', () => {
-          playPill.style.display = 'flex';
-        });
-
-        thumb.addEventListener('click', () => {
-          if (video.paused) {
-            this.pauseAllMedia(video);
-            video.play().catch(() => {});
-          } else {
-            video.pause();
-          }
-        });
-      }
-
-      // Reveal in file explorer
-      const revealBtn = card.querySelector('button[data-path]');
-      if (revealBtn) {
-        revealBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (window.electronAPI) {
-            window.electronAPI.revealFile(rec.fullPath);
-          }
-        });
-      }
-
-      // Delete file button
-      const deleteBtn = card.querySelector('button[data-delete-path]');
-      if (deleteBtn) {
-        deleteBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          const confirmDel = confirm(`Delete "${rec.filename}"?`);
-          if (confirmDel && window.electronAPI && window.electronAPI.deleteRecording) {
-            await window.electronAPI.deleteRecording(rec.fullPath);
+          const targetPath = btn.dataset.deletePath;
+          const confirmDelete = confirm('Are you sure you want to delete this recording?');
+          if (confirmDelete && window.electronAPI && window.electronAPI.deleteRecording) {
+            await window.electronAPI.deleteRecording(targetPath);
             this.loadRecordings();
           }
         });
-      }
+      });
+    };
 
-      this.galleryGrid.appendChild(card);
-    });
+    if (this.currentFilter === 'video') {
+      if (videos.length === 0) {
+        this.galleryGrid.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 50px 20px; color: var(--text-tertiary);">
+            <div style="font-size: 36px; margin-bottom: 8px;">🎬</div>
+            <div style="font-size: 14px; font-weight: 700; color: white;">No video recordings yet</div>
+          </div>
+        `;
+        return;
+      }
+      const title = document.createElement('div');
+      title.className = 'lib-section-title';
+      title.innerHTML = `<span>🎬 Recorded Videos</span> <span style="font-size: 10px; color: var(--text-tertiary);">(${videos.length})</span>`;
+      this.galleryGrid.appendChild(title);
+      videos.forEach(v => this.galleryGrid.appendChild(this.createVideoCard(v)));
+      attachCardListeners(this.galleryGrid);
+      return;
+    }
+
+    if (this.currentFilter === 'voice') {
+      if (voiceNotes.length === 0) {
+        this.galleryGrid.innerHTML = `
+          <div style="grid-column: 1 / -1; text-align: center; padding: 50px 20px; color: var(--text-tertiary);">
+            <div style="font-size: 36px; margin-bottom: 8px;">🎙️</div>
+            <div style="font-size: 14px; font-weight: 700; color: white;">No voice recordings yet</div>
+          </div>
+        `;
+        return;
+      }
+      const title = document.createElement('div');
+      title.className = 'lib-section-title';
+      title.innerHTML = `<span>🎙️ Voice Notes & Audio Clips</span> <span style="font-size: 10px; color: var(--text-tertiary);">(${voiceNotes.length})</span>`;
+      this.galleryGrid.appendChild(title);
+      voiceNotes.forEach(v => this.galleryGrid.appendChild(this.createVoiceCard(v)));
+      attachCardListeners(this.galleryGrid);
+      return;
+    }
+
+    // Default 'all' view: Show sections for videos, voice clips and photos
+    if (videos.length > 0) {
+      const vTitle = document.createElement('div');
+      vTitle.className = 'lib-section-title';
+      vTitle.innerHTML = `<span>🎬 Video Recordings</span> <span style="font-size: 10px; color: var(--text-tertiary);">(${videos.length})</span>`;
+      this.galleryGrid.appendChild(vTitle);
+      videos.forEach(v => this.galleryGrid.appendChild(this.createVideoCard(v)));
+    }
+
+    if (voiceNotes.length > 0) {
+      const aTitle = document.createElement('div');
+      aTitle.className = 'lib-section-title';
+      aTitle.innerHTML = `<span>🎙️ Voice Notes</span> <span style="font-size: 10px; color: var(--text-tertiary);">(${voiceNotes.length})</span>`;
+      this.galleryGrid.appendChild(aTitle);
+      voiceNotes.forEach(a => this.galleryGrid.appendChild(this.createVoiceCard(a)));
+    }
+
+    if (photos.length > 0) {
+      const pTitle = document.createElement('div');
+      pTitle.className = 'lib-section-title';
+      pTitle.innerHTML = `<span>📸 Screenshots</span> <span style="font-size: 10px; color: var(--text-tertiary);">(${photos.length})</span>`;
+      this.galleryGrid.appendChild(pTitle);
+      photos.forEach(p => this.galleryGrid.appendChild(this.createPhotoCard(p)));
+    }
+
+    attachCardListeners(this.galleryGrid);
   }
 }
 

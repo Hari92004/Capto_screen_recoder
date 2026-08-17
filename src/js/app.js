@@ -121,7 +121,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Navigation Tabs Switcher
-  function switchTab(target) {
+  async function switchTab(target) {
+    const prevTab = currentActiveTab;
     currentActiveTab = target;
     tabStudio.classList.toggle('active', target === 'studio');
     tabVoice.classList.toggle('active', target === 'voice');
@@ -132,6 +133,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (galleryView) {
       galleryView.style.display = target === 'gallery' ? 'flex' : 'none';
       galleryView.classList.toggle('active', target === 'gallery');
+    }
+
+    if (target !== 'studio') {
+      // Auto-turn OFF camera hardware & close floating overlay when leaving Studio
+      await stopCameraFeeds();
+    } else if (prevTab && prevTab !== 'studio') {
+      // Returning to Studio - restore active camera mode feed if needed
+      const mode = window.fligoRecorder.currentMode;
+      if (mode === 'camera') {
+        currentCamStream = await window.fligoRecorder.startCamera(selectedCamId);
+        if (currentCamStream && previewVideo) {
+          previewVideo.srcObject = currentCamStream;
+          previewVideo.style.transform = (toggleCamFlip && toggleCamFlip.checked) ? 'scaleX(-1)' : 'none';
+          previewVideo.play().catch(() => {});
+          broadcastCameraFilters();
+        }
+      } else if (mode === 'dual') {
+        await initPreview('dual');
+        const selectedCamLabel = selectCamDevice.options[selectCamDevice.selectedIndex]?.text || '';
+        if (window.electronAPI && window.electronAPI.openCameraOverlay) {
+          window.electronAPI.openCameraOverlay({
+            shape: window.fligoRecorder.cameraShape,
+            size: window.fligoRecorder.cameraSize,
+            deviceId: selectedCamId,
+            deviceLabel: selectedCamLabel
+          });
+        }
+      }
     }
 
     if (target === 'gallery') {

@@ -646,6 +646,22 @@ input:checked + .slider-round:before {
   align-content: start;
 }
 
+.lib-section-title {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  font-weight: 800;
+  color: #F2F2F7;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  margin-bottom: 2px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  letter-spacing: 0.3px;
+}
+
+
 
 .gallery-grid::-webkit-scrollbar {
   width: 4px;
