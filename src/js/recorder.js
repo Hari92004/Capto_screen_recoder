@@ -21,6 +21,7 @@ class CaptoRecorder {
     this.cameraBrightnessPercent = 100;
     this.cameraSmoothnessPercent = 0;
     this.cameraNoiseReductionPercent = 0;
+    this.isCameraFlipped = true; // Natural Horizontal Mirror / Flip for Selfie View
 
     this.screenStream = null;
     this.cameraStream = null;
@@ -63,6 +64,10 @@ class CaptoRecorder {
 
   setCameraNoiseReduction(percent) {
     this.cameraNoiseReductionPercent = percent;
+  }
+
+  setCameraFlipped(flipped) {
+    this.isCameraFlipped = !!flipped;
   }
 
   setCameraDeviceId(deviceId) {
@@ -287,9 +292,11 @@ class CaptoRecorder {
               this.ctx.clearRect(0, 0, nativeW, nativeH);
               // Face Brightness, Smoothness & Noise Reduction Filters
               this.ctx.filter = this.getCameraFilterString();
-              // Natural Horizontal Mirror Flip
-              this.ctx.translate(nativeW, 0);
-              this.ctx.scale(-1, 1);
+              if (this.isCameraFlipped) {
+                // Natural Horizontal Mirror Flip
+                this.ctx.translate(nativeW, 0);
+                this.ctx.scale(-1, 1);
+              }
               this.ctx.drawImage(this.camVideoElement, 0, 0, nativeW, nativeH);
               this.ctx.restore();
             }
@@ -377,6 +384,87 @@ class CaptoRecorder {
     }
   }
 
+  async startVoiceRecording(micStream, systemAudioStream = null) {
+    try {
+      this.currentMode = 'voice';
+
+      // Audio DSP Pipeline
+      let processedAudioStream = null;
+      try {
+        if (window.fligoAudioEngine) {
+          if (typeof window.fligoAudioEngine.buildAudioStream === 'function') {
+            processedAudioStream = await window.fligoAudioEngine.buildAudioStream(micStream, systemAudioStream);
+          } else if (typeof window.fligoAudioEngine.init === 'function') {
+            processedAudioStream = await window.fligoAudioEngine.init(micStream, systemAudioStream);
+          } else {
+            processedAudioStream = micStream;
+          }
+        } else {
+          processedAudioStream = micStream;
+        }
+      } catch (audioErr) {
+        console.warn('Voice DSP fallback to raw mic:', audioErr);
+        processedAudioStream = micStream;
+      }
+
+      if (!processedAudioStream || processedAudioStream.getAudioTracks().length === 0) {
+        console.error('No audio track available for voice recording');
+        return;
+      }
+
+      const audioCodecs = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/ogg;codecs=opus',
+        'audio/mp4'
+      ];
+
+      let chosenAudioMime = '';
+      for (const ac of audioCodecs) {
+        if (MediaRecorder.isTypeSupported(ac)) {
+          chosenAudioMime = ac;
+          break;
+        }
+      }
+      if (!chosenAudioMime) chosenAudioMime = 'audio/webm';
+      this.selectedMimeType = chosenAudioMime;
+
+      this.recordedChunks = [];
+      this.mediaRecorder = new MediaRecorder(processedAudioStream, {
+        mimeType: chosenAudioMime,
+        audioBitsPerSecond: 320000 // Ultra-high studio quality audio
+      });
+
+      this.mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          this.recordedChunks.push(event.data);
+        }
+      };
+
+      this.mediaRecorder.onstop = async () => {
+        await this.saveRecordingFile();
+      };
+
+      this.mediaRecorder.start(1000);
+      this.isRecording = true;
+      this.isPaused = false;
+      this.recordingStartTime = Date.now();
+      this.elapsedSeconds = 0;
+
+      this.startTimer();
+
+      if (window.electronAPI && window.electronAPI.recordingStarted) {
+        window.electronAPI.recordingStarted();
+      }
+
+      if (this.onRecordingStateChange) {
+        this.onRecordingStateChange('recording');
+      }
+    } catch (err) {
+      console.error('Error starting voice recording:', err);
+    }
+  }
+
   pauseRecording() {
     if (!this.isRecording) return;
     if (this.isPaused) {
@@ -451,6 +539,7 @@ class CaptoRecorder {
 
   getModeName() {
     switch (this.currentMode) {
+      case 'voice': return 'Voice';
       case 'fullscreen': return 'FullScreen';
       case 'region': return 'CustomCrop';
       case 'dual': return 'Face+Screen';
@@ -460,8 +549,9 @@ class CaptoRecorder {
   }
 
   async saveRecordingFile() {
+    const isVoice = this.currentMode === 'voice';
     const isMp4 = this.selectedMimeType.includes('mp4');
-    const extension = isMp4 ? 'mp4' : 'webm';
+    const extension = isVoice ? 'webm' : (isMp4 ? 'mp4' : 'webm');
     const blob = new Blob(this.recordedChunks, { type: this.selectedMimeType });
     let arrayBuffer = await blob.arrayBuffer();
 
@@ -522,8 +612,10 @@ class CaptoRecorder {
         await camVideo.play().catch(() => {});
 
         this.ctx.save();
-        this.ctx.translate(this.canvas.width, 0);
-        this.ctx.scale(-1, 1);
+        if (this.isCameraFlipped) {
+          this.ctx.translate(this.canvas.width, 0);
+          this.ctx.scale(-1, 1);
+        }
         this.ctx.drawImage(camVideo, 0, 0, this.canvas.width, this.canvas.height);
         this.ctx.restore();
       }

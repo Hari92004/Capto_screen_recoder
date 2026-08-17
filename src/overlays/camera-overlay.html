@@ -115,6 +115,7 @@
     <video id="camera-feed" autoplay muted playsinline></video>
     
     <div class="cam-hover-controls">
+      <button class="mini-btn" id="btn-flip-cam" title="Flip / Mirror Camera (Selfie View)">🪞</button>
       <button class="mini-btn" id="btn-cycle-shape" title="Switch Shape (Circle/Rounded/Square)">🔄</button>
       <button class="mini-btn" id="btn-close-cam" title="Hide Overlay">✖</button>
     </div>
@@ -123,13 +124,22 @@
   <script>
     const container = document.getElementById('cam-container');
     const video = document.getElementById('camera-feed');
+    const btnFlipCam = document.getElementById('btn-flip-cam');
     const btnCycleShape = document.getElementById('btn-cycle-shape');
     const btnCloseCam = document.getElementById('btn-close-cam');
 
     const shapes = ['circle', 'rounded', 'rect'];
     let currentShapeIndex = 0;
+    let isFlipped = true;
     let currentStream = null;
     let isInitializing = false;
+
+    function applyFlip() {
+      if (video) {
+        video.style.transform = isFlipped ? 'scaleX(-1)' : 'none';
+      }
+    }
+
 
     function stopStream() {
       if (currentStream) {
@@ -233,6 +243,14 @@
       }
     });
 
+    if (btnFlipCam) {
+      btnFlipCam.addEventListener('click', (e) => {
+        e.stopPropagation();
+        isFlipped = !isFlipped;
+        applyFlip();
+      });
+    }
+
     btnCloseCam.addEventListener('click', (e) => {
       e.stopPropagation();
       stopStream();
@@ -262,6 +280,7 @@
       if (microSoftness > 0.04) filters.push(`blur(${microSoftness.toFixed(2)}px)`);
 
       video.style.filter = filters.join(' ');
+      applyFlip();
     }
 
     if (window.electronAPI) {
@@ -295,9 +314,15 @@
         if (typeof noiseReduction === 'number') camNoiseReduction = noiseReduction;
         applyFilters();
       });
+
+      window.electronAPI.onUpdateCamFlipped((flipped) => {
+        isFlipped = !!flipped;
+        applyFlip();
+      });
     } else {
       initCamera();
     }
+
   </script>
 </body>
 </html>

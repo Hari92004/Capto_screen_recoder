@@ -124,5 +124,8 @@
       "category": "AudioVideo;Recorder;",
       "maintainer": "Hari"
     }
+  },
+  "dependencies": {
+    "@shiguredo/rnnoise-wasm": "^2025.1.5"
   }
 }

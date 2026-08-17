@@ -461,6 +461,13 @@ ipcMain.on('set-camera-filters', (event, filters) => {
   }
 });
 
+ipcMain.on('set-camera-flipped', (event, flipped) => {
+  if (cameraOverlayWindow) {
+    cameraOverlayWindow.webContents.send('update-cam-flipped', flipped);
+  }
+});
+
+
 // Toolbar Controls
 ipcMain.on('show-toolbar', () => {
   openToolbar();
@@ -535,3 +542,42 @@ ipcMain.on('open-recordings-folder', () => {
 ipcMain.on('reveal-file', (event, filePath) => {
   shell.showItemInFolder(filePath);
 });
+
+// Delete Single Recording
+ipcMain.handle('delete-recording', async (event, filePath) => {
+  try {
+    if (filePath && fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      return { success: true };
+    }
+    return { success: false, error: 'File does not exist' };
+  } catch (err) {
+    console.error('Error deleting recording:', err);
+    return { success: false, error: err.message };
+  }
+});
+
+// Clear / Delete All Recordings from Library
+ipcMain.handle('clear-all-recordings', async () => {
+  try {
+    if (!fs.existsSync(recordingsDir)) return { success: true, count: 0 };
+    const files = fs.readdirSync(recordingsDir);
+    let deletedCount = 0;
+    for (const f of files) {
+      if (f.endsWith('.mp4') || f.endsWith('.webm') || f.endsWith('.wav') || f.endsWith('.png')) {
+        const fullPath = path.join(recordingsDir, f);
+        try {
+          fs.unlinkSync(fullPath);
+          deletedCount++;
+        } catch (e) {
+          console.warn('Could not delete:', fullPath, e);
+        }
+      }
+    }
+    return { success: true, count: deletedCount };
+  } catch (err) {
+    console.error('Error clearing recordings:', err);
+    return { success: false, error: err.message };
+  }
+});
+

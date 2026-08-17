@@ -33,12 +33,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setCameraSize: (size) => ipcRenderer.send('set-camera-size', size),
   setCameraBrightness: (val) => ipcRenderer.send('set-camera-brightness', val),
   setCameraFilters: (filters) => ipcRenderer.send('set-camera-filters', filters),
+  setCameraFlipped: (flipped) => ipcRenderer.send('set-camera-flipped', flipped),
   onInitCamSettings: (callback) => ipcRenderer.on('init-cam-settings', (event, data) => callback(data)),
   onUpdateCamSettings: (callback) => ipcRenderer.on('update-cam-settings', (event, data) => callback(data)),
   onUpdateCamShape: (callback) => ipcRenderer.on('update-cam-shape', (event, shape) => callback(shape)),
   onUpdateCamBrightness: (callback) => ipcRenderer.on('update-cam-brightness', (event, val) => callback(val)),
   onUpdateCamFilters: (callback) => ipcRenderer.on('update-cam-filters', (event, filters) => callback(filters)),
+  onUpdateCamFlipped: (callback) => ipcRenderer.on('update-cam-flipped', (event, flipped) => callback(flipped)),
   onStopCamFeed: (callback) => ipcRenderer.on('stop-cam-feed', () => callback()),
+
 
   // Floating Dynamic Island Toolbar
   showToolbar: () => ipcRenderer.send('show-toolbar'),
@@ -55,6 +58,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Recording Storage & Files
   saveRecording: (data) => ipcRenderer.invoke('save-recording', data),
   getRecordingsList: () => ipcRenderer.invoke('get-recordings-list'),
+  deleteRecording: (filePath) => ipcRenderer.invoke('delete-recording', filePath),
+  clearAllRecordings: () => ipcRenderer.invoke('clear-all-recordings'),
   openRecordingsFolder: () => ipcRenderer.send('open-recordings-folder'),
   revealFile: (filePath) => ipcRenderer.send('reveal-file', filePath)
 });
+
