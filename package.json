@@ -47,7 +47,10 @@
       "output": "dist"
     },
     "win": {
-      "target": "dir",
+      "target": [
+        "nsis",
+        "dir"
+      ],
       "icon": "src/assets/icon.ico",
       "signAndEditExecutable": false
     },
