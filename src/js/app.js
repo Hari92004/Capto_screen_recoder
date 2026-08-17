@@ -135,40 +135,48 @@ document.addEventListener('DOMContentLoaded', async () => {
       galleryView.classList.toggle('active', target === 'gallery');
     }
 
-    if (target !== 'studio') {
-      // Auto-turn OFF camera hardware & close floating overlay when leaving Studio
-      await stopCameraFeeds();
-    } else if (prevTab && prevTab !== 'studio') {
-      // Returning to Studio - restore active camera mode feed if needed
-      const mode = window.fligoRecorder.currentMode;
-      if (mode === 'camera') {
-        currentCamStream = await window.fligoRecorder.startCamera(selectedCamId);
-        if (currentCamStream && previewVideo) {
-          previewVideo.srcObject = currentCamStream;
-          previewVideo.style.transform = (toggleCamFlip && toggleCamFlip.checked) ? 'scaleX(-1)' : 'none';
-          previewVideo.play().catch(() => {});
-          broadcastCameraFilters();
-        }
-      } else if (mode === 'dual') {
-        await initPreview('dual');
-        const selectedCamLabel = selectCamDevice.options[selectCamDevice.selectedIndex]?.text || '';
-        if (window.electronAPI && window.electronAPI.openCameraOverlay) {
-          window.electronAPI.openCameraOverlay({
-            shape: window.fligoRecorder.cameraShape,
-            size: window.fligoRecorder.cameraSize,
-            deviceId: selectedCamId,
-            deviceLabel: selectedCamLabel
-          });
-        }
-      }
-    }
-
     if (target === 'gallery') {
-      if (window.refreshGallery) window.refreshGallery();
+      if (window.fligoGallery) {
+        window.fligoGallery.loadRecordings();
+      } else if (window.refreshGallery) {
+        window.refreshGallery();
+      }
     } else {
       if (window.fligoGallery && window.fligoGallery.pauseAllVideos) {
         window.fligoGallery.pauseAllVideos();
       }
+    }
+
+    if (target !== 'studio') {
+      // Auto-turn OFF camera hardware & close floating overlay when leaving Studio
+      try {
+        await stopCameraFeeds();
+      } catch (e) {}
+    } else if (prevTab && prevTab !== 'studio') {
+      // Returning to Studio - restore active camera mode feed if needed
+      try {
+        const mode = window.fligoRecorder.currentMode;
+        if (mode === 'camera') {
+          currentCamStream = await window.fligoRecorder.startCamera(selectedCamId);
+          if (currentCamStream && previewVideo) {
+            previewVideo.srcObject = currentCamStream;
+            previewVideo.style.transform = (toggleCamFlip && toggleCamFlip.checked) ? 'scaleX(-1)' : 'none';
+            previewVideo.play().catch(() => {});
+            broadcastCameraFilters();
+          }
+        } else if (mode === 'dual') {
+          await initPreview('dual');
+          const selectedCamLabel = selectCamDevice.options[selectCamDevice.selectedIndex]?.text || '';
+          if (window.electronAPI && window.electronAPI.openCameraOverlay) {
+            window.electronAPI.openCameraOverlay({
+              shape: window.fligoRecorder.cameraShape,
+              size: window.fligoRecorder.cameraSize,
+              deviceId: selectedCamId,
+              deviceLabel: selectedCamLabel
+            });
+          }
+        }
+      } catch (e) {}
     }
 
     if (target === 'voice') {
@@ -180,7 +188,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   tabStudio.addEventListener('click', () => switchTab('studio'));
   tabVoice.addEventListener('click', () => switchTab('voice'));
-  tabGallery.addEventListener('click', () => switchTab('gallery'));
+  tabGallery.addEventListener('click', () => {
+    switchTab('gallery');
+    if (window.fligoGallery) {
+      window.fligoGallery.loadRecordings();
+    }
+  });
 
   // Toggle Microphone Mute / Unmute
   function toggleMicMute() {
