@@ -38,6 +38,9 @@ class CaptoGallery {
         this.loadRecordings();
       });
     });
+
+    // Initial Load
+    this.loadRecordings();
   }
 
   pauseAllMedia(exceptMedia = null) {

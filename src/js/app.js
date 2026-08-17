@@ -127,9 +127,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     tabVoice.classList.toggle('active', target === 'voice');
     tabGallery.classList.toggle('active', target === 'gallery');
 
-    studioView.style.display = target === 'studio' ? 'flex' : 'none';
-    voiceView.style.display = target === 'voice' ? 'flex' : 'none';
-    galleryView.classList.toggle('active', target === 'gallery');
+    if (studioView) studioView.style.display = target === 'studio' ? 'flex' : 'none';
+    if (voiceView) voiceView.style.display = target === 'voice' ? 'flex' : 'none';
+    if (galleryView) {
+      galleryView.style.display = target === 'gallery' ? 'flex' : 'none';
+      galleryView.classList.toggle('active', target === 'gallery');
+    }
 
     if (target === 'gallery') {
       if (window.refreshGallery) window.refreshGallery();
