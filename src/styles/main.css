@@ -7,10 +7,10 @@
 :root {
   /* iOS Dark Obsidian Palette */
   --ios-bg: #07090e;
-  --ios-glass-surface: rgba(18, 22, 32, 0.88);
-  --ios-glass-card: rgba(30, 36, 50, 0.6);
-  --ios-glass-card-hover: rgba(45, 54, 75, 0.8);
-  --ios-glass-border: rgba(255, 255, 255, 0.12);
+  --ios-glass-surface: rgba(14, 18, 26, 0.97);
+  --ios-glass-card: rgba(26, 32, 48, 0.85);
+  --ios-glass-card-hover: rgba(40, 50, 72, 0.95);
+  --ios-glass-border: rgba(255, 255, 255, 0.14);
 
   /* iOS Accents */
   --ios-blue: #0A84FF;
@@ -37,8 +37,7 @@
 
 html, body {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
-  background: transparent !important;
-  background-color: rgba(0, 0, 0, 0) !important;
+  background: #0e121a;
   color: var(--text-primary);
   width: 100vw;
   height: 100vh;
@@ -57,12 +56,10 @@ html, body {
 .app-window {
   width: 100%;
   height: 100%;
-  background: var(--ios-glass-surface);
-  backdrop-filter: var(--ios-blur);
-  -webkit-backdrop-filter: var(--ios-blur);
-  border: 1px solid var(--ios-glass-border);
-  border-radius: 20px;
-  box-shadow: none;
+  background: #0e121a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -133,6 +130,7 @@ html, body {
   border: none;
   background: transparent;
   cursor: pointer;
+  -webkit-app-region: no-drag;
   transition: all 0.2s var(--ios-spring);
 }
 
@@ -627,13 +625,115 @@ input:checked + .slider-round:before {
 .gallery-view {
   display: none;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
   min-height: 350px;
 }
 
 .gallery-view.active {
   display: flex !important;
+}
+
+.library-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+}
+
+.library-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.library-title-text {
+  font-weight: 800;
+  font-size: 15px;
+  color: #FFFFFF;
+  letter-spacing: -0.2px;
+}
+
+.library-folder-hint {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  opacity: 0.85;
+}
+
+.library-section-switch {
+  display: flex;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 4px;
+  gap: 6px;
+  margin-bottom: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.lib-switch-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.25, 1, 0.5, 1);
+  user-select: none;
+}
+
+.lib-switch-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.lib-switch-btn.active[data-filter="video"] {
+  background: linear-gradient(135deg, rgba(10, 132, 255, 0.95), rgba(0, 100, 220, 0.95));
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 14px rgba(10, 132, 255, 0.45);
+}
+
+.lib-switch-btn.active[data-filter="voice"] {
+  background: linear-gradient(135deg, rgba(94, 92, 230, 0.95), rgba(70, 68, 190, 0.95));
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 14px rgba(94, 92, 230, 0.45);
+}
+
+.lib-switch-btn.active[data-filter="all"] {
+  background: linear-gradient(135deg, rgba(48, 209, 88, 0.95), rgba(30, 160, 65, 0.95));
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 14px rgba(48, 209, 88, 0.45);
+}
+
+.switch-icon {
+  font-size: 14px;
+}
+
+.switch-badge {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.35);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.lib-switch-btn.active .switch-badge {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.35);
 }
 
 .gallery-grid {

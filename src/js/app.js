@@ -510,197 +510,110 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }
 
-      // 2. Draw Dual Waveforms in 2 Side-by-Side Studio Oscilloscope Boxes
+      // 2. Draw Panoramic Studio Oscilloscope Waveform
       ctx.clearRect(0, 0, width, height);
 
-      const gap = 10;
-      const panelW = (width - gap - 8) / 2; // 271px width per panel
-      const panelH = height - 8;            // 122px height
+      const panelW = width - 8;
+      const panelH = height - 8;
+      const panelX = 4;
       const panelY = 4;
-      const leftX = 4;
-      const rightX = leftX + panelW + gap;
       const centerY = panelY + panelH / 2;
       const timeOffset = performance.now() * 0.003;
 
-      function drawStudioBox(x, y, w, h, radius, fillStyle, strokeStyle, glowColor) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.moveTo(x + radius, y);
-        ctx.lineTo(x + w - radius, y);
-        ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
-        ctx.lineTo(x + w, y + h - radius);
-        ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
-        ctx.lineTo(x + radius, y + h);
-        ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
-        ctx.lineTo(x, y + radius);
-        ctx.quadraticCurveTo(x, y, x + radius, y);
-        ctx.closePath();
+      // Studio Panel Outer Glow & Container
+      const borderColor = isRecordingNow ? 'rgba(255, 69, 58, 0.6)' : 'rgba(48, 209, 88, 0.5)';
+      const glowColor = isRecordingNow ? 'rgba(255, 69, 58, 0.25)' : 'rgba(48, 209, 88, 0.15)';
 
-        if (glowColor) {
-          ctx.shadowColor = glowColor;
-          ctx.shadowBlur = 10;
-        }
-
-        ctx.fillStyle = fillStyle;
-        ctx.fill();
-
-        ctx.strokeStyle = strokeStyle;
-        ctx.lineWidth = 1.4;
-        ctx.stroke();
-        ctx.restore();
-      }
-
-      // ----------------------------------------------------
-      // BOX 1: RAW MIC WAVEFORM (Left Panel - Light Blue)
-      // ----------------------------------------------------
-      const rawBorderColor = isRecordingNow ? 'rgba(255, 69, 58, 0.6)' : 'rgba(100, 210, 255, 0.45)';
-      const rawGlowColor = isRecordingNow ? 'rgba(255, 69, 58, 0.25)' : 'rgba(100, 210, 255, 0.2)';
-      drawStudioBox(leftX, panelY, panelW, panelH, 10, 'rgba(10, 16, 26, 0.95)', rawBorderColor, rawGlowColor);
-
-      // Left Panel Grid Lines
       ctx.save();
       ctx.beginPath();
-      ctx.strokeStyle = 'rgba(100, 210, 255, 0.09)';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([3, 3]);
-      ctx.moveTo(leftX + 10, centerY);
-      ctx.lineTo(leftX + panelW - 10, centerY);
-      ctx.moveTo(leftX + panelW / 2, panelY + 10);
-      ctx.lineTo(leftX + panelW / 2, panelY + panelH - 10);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.restore();
-
-      // Left Header Tag
-      ctx.font = '700 9px sans-serif';
-      ctx.fillStyle = isRecordingNow ? '#FF453A' : '#64D2FF';
-      ctx.fillText('● RAW MIC (INPUT)', leftX + 12, panelY + 15);
-
-      // Plot Left Waveform (Raw Mic)
-      if (isMicMuted) {
-        ctx.font = '600 10px sans-serif';
-        ctx.fillStyle = '#64D2FF';
-        ctx.textAlign = 'center';
-        ctx.fillText('MIC MUTED', leftX + panelW / 2, centerY + 3);
-        ctx.textAlign = 'left';
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(panelX, panelY, panelW, panelH, 12);
       } else {
-        const rawPoints = [];
-        const step = panelW / (rawArray.length - 1);
-        const ampScale = panelH * 0.42;
-
-        for (let i = 0; i < rawArray.length; i++) {
-          const rawVal = rawArray[i] || 0;
-          const boosted = Math.tanh(rawVal * 5.5);
-          const idleWave = (Math.abs(boosted) < 0.02) ? Math.sin(timeOffset * 2.5 + i * 0.18) * 0.02 : 0;
-          const y = centerY + (boosted + idleWave) * ampScale;
-          const x = leftX + (i * step);
-          rawPoints.push({ x, y });
-        }
-
-        // Fill area under Raw curve
-        ctx.save();
-        ctx.beginPath();
-        ctx.moveTo(rawPoints[0].x, centerY);
-        for (let i = 0; i < rawPoints.length; i++) {
-          ctx.lineTo(rawPoints[i].x, rawPoints[i].y);
-        }
-        ctx.lineTo(rawPoints[rawPoints.length - 1].x, centerY);
-        ctx.closePath();
-        const rawGrad = ctx.createLinearGradient(0, panelY, 0, panelY + panelH);
-        rawGrad.addColorStop(0, isRecordingNow ? 'rgba(255, 69, 58, 0.25)' : 'rgba(100, 210, 255, 0.25)');
-        rawGrad.addColorStop(1, 'rgba(100, 210, 255, 0.0)');
-        ctx.fillStyle = rawGrad;
-        ctx.fill();
-        ctx.restore();
-
-        // Stroke Raw Waveform Line
-        ctx.save();
-        ctx.beginPath();
-        ctx.strokeStyle = isRecordingNow ? '#FF453A' : '#64D2FF';
-        ctx.lineWidth = 2.2;
-        ctx.shadowColor = isRecordingNow ? '#FF453A' : '#64D2FF';
-        ctx.shadowBlur = 8;
-        ctx.moveTo(rawPoints[0].x, rawPoints[0].y);
-        for (let i = 1; i < rawPoints.length; i++) {
-          ctx.lineTo(rawPoints[i].x, rawPoints[i].y);
-        }
-        ctx.stroke();
-        ctx.restore();
+        ctx.rect(panelX, panelY, panelW, panelH);
       }
+      ctx.fillStyle = 'rgba(8, 14, 20, 0.95)';
+      ctx.shadowColor = glowColor;
+      ctx.shadowBlur = 12;
+      ctx.fill();
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+      ctx.restore();
 
-      // ----------------------------------------------------
-      // BOX 2: AI ANC CLEAN OUTPUT (Right Panel - Neon Green)
-      // ----------------------------------------------------
-      const cleanBorderColor = 'rgba(48, 209, 88, 0.45)';
-      const cleanGlowColor = 'rgba(48, 209, 88, 0.15)';
-      drawStudioBox(rightX, panelY, panelW, panelH, 10, 'rgba(10, 18, 16, 0.95)', cleanBorderColor, cleanGlowColor);
-
-      // Right Panel Grid Lines
+      // Studio Oscilloscope Center & Grid Lines
       ctx.save();
       ctx.beginPath();
-      ctx.strokeStyle = 'rgba(48, 209, 88, 0.08)';
+      ctx.strokeStyle = isRecordingNow ? 'rgba(255, 69, 58, 0.12)' : 'rgba(48, 209, 88, 0.1)';
       ctx.lineWidth = 1;
-      ctx.setLineDash([3, 3]);
-      ctx.moveTo(rightX + 10, centerY);
-      ctx.lineTo(rightX + panelW - 10, centerY);
-      ctx.moveTo(rightX + panelW / 2, panelY + 10);
-      ctx.lineTo(rightX + panelW / 2, panelY + panelH - 10);
+      ctx.setLineDash([4, 4]);
+      ctx.moveTo(panelX + 16, centerY);
+      ctx.lineTo(panelX + panelW - 16, centerY);
+      for (let gx = 1; gx <= 5; gx++) {
+        const xPos = panelX + (panelW * gx) / 6;
+        ctx.moveTo(xPos, panelY + 10);
+        ctx.lineTo(xPos, panelY + panelH - 10);
+      }
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.restore();
 
-      // Right Header Tag
-      ctx.font = '700 9px sans-serif';
-      ctx.fillStyle = '#30D158';
-      ctx.fillText('● AI ANC CLEAN (OUTPUT)', rightX + 12, panelY + 15);
+      // Header Tag
+      ctx.font = '700 10px sans-serif';
+      ctx.fillStyle = isRecordingNow ? '#FF453A' : '#30D158';
+      ctx.fillText(isRecordingNow ? '● ACTIVE RECORDING • 48 kHz 320kbps' : '● STUDIO LIVE VOCAL MONITOR', panelX + 16, panelY + 18);
 
-      // Plot Right Waveform (Clean AI ANC)
       if (isMicMuted) {
-        ctx.font = '600 10px sans-serif';
+        ctx.font = '600 12px sans-serif';
         ctx.fillStyle = '#FF9F0A';
         ctx.textAlign = 'center';
-        ctx.fillText('MIC MUTED', rightX + panelW / 2, centerY + 3);
+        ctx.fillText('🎙️ MICROPHONE MUTED', panelX + panelW / 2, centerY + 4);
         ctx.textAlign = 'left';
       } else {
-        const cleanPoints = [];
+        const points = [];
         const step = panelW / (cleanArray.length - 1);
-        const ampScale = panelH * 0.42;
+        const ampScale = panelH * 0.44;
 
         for (let i = 0; i < cleanArray.length; i++) {
-          const cleanVal = cleanArray[i] || 0;
-          const boosted = Math.tanh(cleanVal * 5.2);
-          const idleWave = (Math.abs(boosted) < 0.015) ? Math.sin(timeOffset * 2.0 + i * 0.18) * 0.01 : 0;
+          const val = cleanArray[i] || 0;
+          const boosted = Math.tanh(val * 4.5);
+          const idleWave = (Math.abs(boosted) < 0.02) ? Math.sin(timeOffset * 2.2 + i * 0.15) * 0.02 : 0;
           const y = centerY + (boosted + idleWave) * ampScale;
-          const x = rightX + (i * step);
-          cleanPoints.push({ x, y });
+          const x = panelX + (i * step);
+          points.push({ x, y });
         }
 
-        // Fill area under Clean curve
+        // Fill Area under Vocal Waveform Curve
         ctx.save();
         ctx.beginPath();
-        ctx.moveTo(cleanPoints[0].x, centerY);
-        for (let i = 0; i < cleanPoints.length; i++) {
-          ctx.lineTo(cleanPoints[i].x, cleanPoints[i].y);
+        ctx.moveTo(points[0].x, centerY);
+        for (let i = 0; i < points.length; i++) {
+          ctx.lineTo(points[i].x, points[i].y);
         }
-        ctx.lineTo(cleanPoints[cleanPoints.length - 1].x, centerY);
+        ctx.lineTo(points[points.length - 1].x, centerY);
         ctx.closePath();
-        const cleanGrad = ctx.createLinearGradient(0, panelY, 0, panelY + panelH);
-        cleanGrad.addColorStop(0, 'rgba(48, 209, 88, 0.3)');
-        cleanGrad.addColorStop(1, 'rgba(48, 209, 88, 0.0)');
-        ctx.fillStyle = cleanGrad;
+        const grad = ctx.createLinearGradient(0, panelY, 0, panelY + panelH);
+        if (isRecordingNow) {
+          grad.addColorStop(0, 'rgba(255, 69, 58, 0.35)');
+          grad.addColorStop(1, 'rgba(255, 69, 58, 0.0)');
+        } else {
+          grad.addColorStop(0, 'rgba(48, 209, 88, 0.3)');
+          grad.addColorStop(0.5, 'rgba(94, 92, 230, 0.15)');
+          grad.addColorStop(1, 'rgba(48, 209, 88, 0.0)');
+        }
+        ctx.fillStyle = grad;
         ctx.fill();
         ctx.restore();
 
-        // Stroke Clean Waveform Line
+        // Stroke Glowing Vocal Waveform Curve
         ctx.save();
         ctx.beginPath();
-        ctx.strokeStyle = '#30D158';
+        ctx.strokeStyle = isRecordingNow ? '#FF453A' : '#30D158';
         ctx.lineWidth = 2.4;
-        ctx.shadowColor = '#30D158';
-        ctx.shadowBlur = 8;
-        ctx.moveTo(cleanPoints[0].x, cleanPoints[0].y);
-        for (let i = 1; i < cleanPoints.length; i++) {
-          ctx.lineTo(cleanPoints[i].x, cleanPoints[i].y);
+        ctx.shadowColor = isRecordingNow ? '#FF453A' : '#30D158';
+        ctx.shadowBlur = 10;
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) {
+          ctx.lineTo(points[i].x, points[i].y);
         }
         ctx.stroke();
         ctx.restore();

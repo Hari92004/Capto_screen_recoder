@@ -453,9 +453,8 @@ class CaptoRecorder {
 
       this.startTimer();
 
-      if (window.electronAPI && window.electronAPI.recordingStarted) {
-        window.electronAPI.recordingStarted();
-      }
+      // Only Video Recording auto-hides window and shows floating toolbar
+      // Voice Recording keeps studio dashboard open so user can see live pitch & visualizers
 
       if (this.onRecordingStateChange) {
         this.onRecordingStateChange('recording');
@@ -480,6 +479,7 @@ class CaptoRecorder {
 
   async stopRecording() {
     if (!this.isRecording) return;
+    const wasVoice = this.currentMode === 'voice';
     this.isRecording = false;
     this.isPaused = false;
     clearInterval(this.timerInterval);
@@ -493,7 +493,8 @@ class CaptoRecorder {
       this.mediaRecorder.stop();
     }
 
-    if (window.electronAPI && window.electronAPI.recordingStopped) {
+    // Only restore window / hide toolbar if it was a video recording that hid the window
+    if (!wasVoice && window.electronAPI && window.electronAPI.recordingStopped) {
       window.electronAPI.recordingStopped();
     }
 

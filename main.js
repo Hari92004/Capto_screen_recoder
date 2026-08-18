@@ -44,16 +44,24 @@ if (process.platform === 'win32') {
 }
 
 // Target Saved Folder: "Screen Recordings" in Videos
-const baseVideoPath = app.getPath('videos') || app.getPath('home');
-const recordingsDir = path.join(baseVideoPath, 'Screen Recordings');
+function getRecordingsDir() {
+  const explicitPath = 'C:\\Users\\harip\\Videos\\Screen Recordings';
+  if (fs.existsSync(explicitPath)) return explicitPath;
 
-if (!fs.existsSync(recordingsDir)) {
-  try {
-    fs.mkdirSync(recordingsDir, { recursive: true });
-  } catch (err) {
-    console.error('Error creating recordings directory:', err);
+  const userProfile = process.env.USERPROFILE || 'C:\\Users\\harip';
+  const directPath = path.join(userProfile, 'Videos', 'Screen Recordings');
+  if (fs.existsSync(directPath)) return directPath;
+
+  const baseVideoPath = app.getPath('videos') || app.getPath('home');
+  const fallback = path.join(baseVideoPath, 'Screen Recordings');
+  if (!fs.existsSync(fallback)) {
+    try { fs.mkdirSync(fallback, { recursive: true }); } catch (e) {}
   }
+  return fallback;
 }
+
+const recordingsDir = getRecordingsDir();
+console.log('[Capto] Target Recordings Directory:', recordingsDir);
 
 function createMainWindow() {
   mainWindow = new BrowserWindow({
@@ -65,9 +73,9 @@ function createMainWindow() {
     minHeight: 740,
     maxHeight: 740,
     frame: false,
-    transparent: true,
-    backgroundColor: '#00000000',
-    hasShadow: false,
+    transparent: false,
+    backgroundColor: '#0e121a',
+    hasShadow: true,
     resizable: false, // Strict fixed dimensions
     maximizable: false,
     fullscreenable: false,
@@ -83,6 +91,10 @@ function createMainWindow() {
   });
 
   mainWindow.loadFile(path.join(__dirname, 'src', 'index.html'));
+
+  mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
+    console.log(`[Renderer]: ${message}`);
+  });
 
   mainWindow.on('page-title-updated', (e) => {
     e.preventDefault();
@@ -313,6 +325,12 @@ app.whenReady().then(() => {
   globalShortcut.register('F9', triggerRecord);
   globalShortcut.register('F10', triggerPause);
   globalShortcut.register('F11', triggerCam);
+  globalShortcut.register('F12', () => {
+    if (mainWindow) mainWindow.webContents.toggleDevTools();
+  });
+  globalShortcut.register('CommandOrControl+Shift+I', () => {
+    if (mainWindow) mainWindow.webContents.toggleDevTools();
+  });
   globalShortcut.register('CommandOrControl+Shift+R', triggerRecord);
   globalShortcut.register('CommandOrControl+Shift+P', triggerPause);
   globalShortcut.register('CommandOrControl+Shift+C', triggerCam);
@@ -498,9 +516,11 @@ ipcMain.on('update-toolbar-timer', (event, timeStr) => {
 // Save Recorded Video Buffer
 ipcMain.handle('save-recording', async (event, { buffer, filename }) => {
   try {
-    const filePath = path.join(recordingsDir, filename);
+    const targetDir = getRecordingsDir();
+    const filePath = path.join(targetDir, filename);
     const nodeBuf = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
     fs.writeFileSync(filePath, nodeBuf);
+    console.log('[Capto] Saved recording:', filePath);
     return { success: true, filePath };
   } catch (err) {
     console.error('Error saving recording:', err);
@@ -511,21 +531,35 @@ ipcMain.handle('save-recording', async (event, { buffer, filename }) => {
 // List Saved Recordings
 ipcMain.handle('get-recordings-list', async () => {
   try {
-    if (!fs.existsSync(recordingsDir)) return [];
-    const files = fs.readdirSync(recordingsDir);
+    const targetDir = getRecordingsDir();
+    if (!fs.existsSync(targetDir)) {
+      console.warn('[Capto] Recordings directory does not exist:', targetDir);
+      return [];
+    }
+    const files = fs.readdirSync(targetDir);
+    const mediaExts = ['.mp4', '.webm', '.mkv', '.mov', '.avi', '.wmv', '.flv', '.wav', '.mp3', '.m4a', '.ogg', '.aac', '.flac', '.png', '.jpg', '.jpeg'];
     const recordings = files
-      .filter(f => f.endsWith('.mp4') || f.endsWith('.webm') || f.endsWith('.wav') || f.endsWith('.png'))
-      .map(f => {
-        const fullPath = path.join(recordingsDir, f);
-        const stats = fs.statSync(fullPath);
-        return {
-          filename: f,
-          fullPath,
-          sizeBytes: stats.size,
-          createdAt: stats.mtime
-        };
+      .filter(f => {
+        const lower = f.toLowerCase();
+        return mediaExts.some(ext => lower.endsWith(ext));
       })
-      .sort((a, b) => b.createdAt - a.createdAt);
+      .map(f => {
+        const fullPath = path.join(targetDir, f);
+        try {
+          const stats = fs.statSync(fullPath);
+          return {
+            filename: f,
+            fullPath,
+            sizeBytes: stats.size,
+            createdAt: stats.mtime
+          };
+        } catch (e) {
+          return null;
+        }
+      })
+      .filter(Boolean)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    console.log(`[Capto] Found ${recordings.length} media files in: ${targetDir}`);
     return recordings;
   } catch (err) {
     console.error('Error reading recordings:', err);
@@ -535,7 +569,8 @@ ipcMain.handle('get-recordings-list', async () => {
 
 // Open Recordings Folder in File Explorer
 ipcMain.on('open-recordings-folder', () => {
-  shell.openPath(recordingsDir);
+  const targetDir = getRecordingsDir();
+  shell.openPath(targetDir);
 });
 
 // Reveal file in File Explorer
@@ -560,12 +595,15 @@ ipcMain.handle('delete-recording', async (event, filePath) => {
 // Clear / Delete All Recordings from Library
 ipcMain.handle('clear-all-recordings', async () => {
   try {
-    if (!fs.existsSync(recordingsDir)) return { success: true, count: 0 };
-    const files = fs.readdirSync(recordingsDir);
+    const targetDir = getRecordingsDir();
+    if (!fs.existsSync(targetDir)) return { success: true, count: 0 };
+    const files = fs.readdirSync(targetDir);
+    const mediaExts = ['.mp4', '.webm', '.mkv', '.mov', '.avi', '.wmv', '.flv', '.wav', '.mp3', '.m4a', '.ogg', '.aac', '.flac', '.png', '.jpg', '.jpeg'];
     let deletedCount = 0;
     for (const f of files) {
-      if (f.endsWith('.mp4') || f.endsWith('.webm') || f.endsWith('.wav') || f.endsWith('.png')) {
-        const fullPath = path.join(recordingsDir, f);
+      const lower = f.toLowerCase();
+      if (mediaExts.some(ext => lower.endsWith(ext))) {
+        const fullPath = path.join(targetDir, f);
         try {
           fs.unlinkSync(fullPath);
           deletedCount++;

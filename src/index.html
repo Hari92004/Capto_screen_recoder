@@ -211,26 +211,16 @@
             </label>
           </div>
 
-          <!-- Neural Network AI Active Noise Cancellation (RNNoise) -->
+          <!-- Studio AI Voice Compressor & Vocal Enhancer -->
           <div class="ios-row">
-
             <div>
-              <div class="row-label"><span>🧠</span> AI Active Noise Cancellation (ANC)</div>
-              <div class="row-sub">Offline Neural Network eliminates fan, clicks & background hum</div>
+              <div class="row-label"><span>🎙️</span> AI Voice Compressor & Enhancer</div>
+              <div class="row-sub">Broadcast-grade vocal clarity & dynamic volume leveling</div>
             </div>
             <label class="ios-switch">
-              <input type="checkbox" id="toggle-noise-suppression" checked>
+              <input type="checkbox" id="toggle-voice-compressor" checked>
               <span class="slider-round"></span>
             </label>
-          </div>
-
-          <!-- AI ANC Suppression Strength Slider -->
-          <div class="ios-row-column" id="row-anc-strength" style="display: flex;">
-            <div class="ios-row" style="margin-bottom: 6px;">
-              <div class="row-label"><span>🎚️</span> ANC Studio Strength</div>
-              <span id="anc-strength-val-text" style="font-size: 11px; font-weight: 700; color: #5E5CE6;">100% (Maximum AI)</span>
-            </div>
-            <input type="range" class="ios-slider" id="slider-anc-strength" min="40" max="100" value="100" step="5">
           </div>
 
           <!-- Auto Silence Removal -->
@@ -305,17 +295,14 @@
           </div>
         </div>
 
-        <!-- 2. Dual Live Audio Spectrum & Waveform (Before vs After AI ANC) -->
+        <!-- 2. Studio Live Vocal Oscilloscope & Spectrum -->
         <div class="dual-spectrum-card">
           <div class="dual-spectrum-header">
             <div class="spectrum-legend">
-              <span class="legend-dot raw-dot"></span>
-              <span class="legend-text">RAW MIC (With Noise)</span>
-            </div>
-            <div class="spectrum-legend">
               <span class="legend-dot clean-dot"></span>
-              <span class="legend-text">AI ANC CLEAN (Denoised)</span>
+              <span class="legend-text">STUDIO LIVE VOCAL OSCILLOSCOPE</span>
             </div>
+            <span style="font-size: 10px; font-weight: 700; color: #30D158;">48 kHz Hi-Fi HD</span>
           </div>
           
           <div class="spectrum-canvas-container">
@@ -330,16 +317,18 @@
               <span class="chip-lbl">Volume</span>
             </div>
             <div class="metric-chip">
-              <span class="chip-icon">🧠</span>
-              <span class="chip-val" id="voice-metric-vad">98% AI Match</span>
-              <span class="chip-lbl">Voice Detection</span>
+              <span class="chip-icon">🎙️</span>
+              <span class="chip-val" id="voice-metric-vad">Studio HD</span>
+              <span class="chip-lbl">Vocal Clarity</span>
             </div>
             <div class="metric-chip">
               <span class="chip-icon">🧹</span>
-              <span class="chip-val" id="voice-metric-noise">-28 dB Cut</span>
-              <span class="chip-lbl">Noise Floor</span>
+              <span class="chip-val" id="voice-metric-noise">Auto-Gated</span>
+              <span class="chip-lbl">Dynamics</span>
             </div>
           </div>
+        </div>
+
         <!-- 2.5. Live Voice Input VU Level & 16-Band Waveform Equalizer -->
         <div class="voice-live-vu-card">
           <div class="voice-vu-header">
@@ -390,25 +379,16 @@
             </select>
           </div>
 
-          <!-- Neural Network AI ANC Toggle -->
+          <!-- Studio Voice Compressor & Vocal Enhancer -->
           <div class="ios-row">
             <div>
-              <div class="row-label"><span>🧠</span> AI Active Noise Cancellation (ANC)</div>
-              <div class="row-sub">Offline Neural Network eliminates fan & background noise</div>
+              <div class="row-label"><span>🎙️</span> Studio Voice Compressor</div>
+              <div class="row-sub">Broadcast vocal warmth, clarity boost & dynamic auto-gate</div>
             </div>
             <label class="ios-switch">
               <input type="checkbox" id="toggle-voice-noise-suppression" checked>
               <span class="slider-round"></span>
             </label>
-          </div>
-
-          <!-- AI ANC Suppression Strength Slider -->
-          <div class="ios-row-column" id="row-voice-anc-strength" style="display: flex;">
-            <div class="ios-row" style="margin-bottom: 6px;">
-              <div class="row-label"><span>🎚️</span> ANC Studio Strength</div>
-              <span id="voice-anc-strength-val-text" style="font-size: 11px; font-weight: 700; color: #5E5CE6;">100% (Maximum AI)</span>
-            </div>
-            <input type="range" class="ios-slider" id="slider-voice-anc-strength" min="40" max="100" value="100" step="5">
           </div>
 
           <!-- Auto Silence Removal -->
@@ -428,19 +408,29 @@
 
       <!-- Gallery / Library View -->
       <div class="gallery-view" id="gallery-view">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-          <span style="font-weight: 700; font-size: 14px;">Studio Library</span>
+        <div class="library-header-row">
+          <div class="library-title-wrap">
+            <span class="library-title-text">Saved Library</span>
+            <span class="library-folder-hint" id="lib-folder-hint">Screen Recordings</span>
+          </div>
           <div style="display: flex; gap: 6px; align-items: center;">
             <button class="glass-action-btn danger-hover-btn" id="btn-clear-library" title="Remove all recordings from library">🗑️ Clear All</button>
-            <button class="glass-action-btn" id="btn-open-folder" title="Open Recordings in File Explorer">Open in Folder</button>
+            <button class="glass-action-btn" id="btn-open-folder" title="Open Screen Recordings in File Explorer">📂 Open Folder</button>
           </div>
         </div>
 
-        <!-- Library Filter Segment (All vs Videos vs Voice Recordings) -->
-        <div class="library-filter-bar">
-          <button class="lib-filter-btn active" id="filter-all" data-filter="all">📁 All</button>
-          <button class="lib-filter-btn" id="filter-videos" data-filter="video">🎬 Videos</button>
-          <button class="lib-filter-btn" id="filter-voice" data-filter="voice">🎙️ Voice Notes</button>
+        <!-- 2 Sections: Videos | Voice -->
+        <div class="library-section-switch">
+          <button class="lib-switch-btn active" id="filter-videos" data-filter="video">
+            <span class="switch-icon">🎬</span>
+            <span class="switch-text">Videos</span>
+            <span class="switch-badge" id="video-count-badge">0</span>
+          </button>
+          <button class="lib-switch-btn" id="filter-voice" data-filter="voice">
+            <span class="switch-icon">🎙️</span>
+            <span class="switch-text">Voice</span>
+            <span class="switch-badge" id="voice-count-badge">0</span>
+          </button>
         </div>
 
         <div class="gallery-grid" id="gallery-grid">

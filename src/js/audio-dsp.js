@@ -1,8 +1,8 @@
 /**
- * CAPTO AUDIO DSP ENGINE
- * Real-Time Offline AI Active Noise Cancellation (RNNoise Neural Network WASM)
- * Dual Waveform Analysers (Raw vs Clean), Live Pitch & Vocal Range Detection,
- * Dynamic RMS Noise Gate & Multi-Stream Mixing
+ * CAPTO STUDIO AUDIO DSP ENGINE
+ * Broadcast Studio AI Voice Dynamics Compressor, Vocal Presence Equalizer,
+ * Real-Time Autocorrelation Pitch & Musical Note Detector,
+ * Sub-Bass Rumble Cut & Dynamic Studio Noise Gate
  */
 
 class FligoAudioEngine {
@@ -12,61 +12,30 @@ class FligoAudioEngine {
     this.systemStream = null;
     this.mixedDestination = null;
 
-    // RNNoise Neural Network State
-    this.rnnoise = null;
-    this.denoiseState = null;
-    this.isRnnoiseLoaded = false;
-    this.isAiAncEnabled = true;
-    this.ancStrength = 1.0; // 0.0 to 1.0 (100% Neural Suppression)
-    this.lastVad = 0.0;
-    this.frameSize = 480; // 10ms at 48kHz
-
     // DSP Nodes
     this.micSource = null;
     this.highpassFilter = null;
+    this.notchFilter = null;
     this.lowpassFilter = null;
-    this.rnnoiseNode = null;
     this.speechEnhancerFilter = null;
-    this.gateGainNode = null;
     this.compressorNode = null;
+    this.gateGainNode = null;
     
-    // Dual Analysers for Before vs After AI ANC Visualization
-    this.rawAnalyserNode = null;
+    // Analysers for Live Visualization & Pitch Detection
     this.cleanAnalyserNode = null;
-    this.analyserNode = null; // Alias to cleanAnalyserNode
+    this.rawAnalyserNode = null;
+    this.analyserNode = null;
 
-    // Gate & Parameters
+    // Parameters & State
     this.isMuted = false;
-    this.isNoiseSuppressionEnabled = true;
+    this.isVoiceCompressorEnabled = true;
     this.isSilenceRemovalEnabled = true;
-    this.noiseGateThreshold = 0.012; // RMS threshold
+    this.noiseGateThreshold = 0.010; // RMS threshold
     this.currentGateGain = 1.0;
     this.targetGateGain = 1.0;
-
-    // Silence Trimming & VAD State
-    this.silenceThresholdDb = -45;
-    this.silenceHoldTimeMs = 1200;
-    this.isCurrentlySilent = false;
-    this.silenceStartTime = 0;
-    this.onSilenceStateChange = null;
+    this.lastVad = 1.0;
 
     this.rafId = null;
-
-    // Pre-warm RNNoise WASM
-    this.preloadRnnoise();
-  }
-
-  async preloadRnnoise() {
-    if (this.isRnnoiseLoaded) return;
-    try {
-      const { Rnnoise } = await import('./rnnoise.js');
-      this.rnnoise = await Rnnoise.load();
-      this.frameSize = this.rnnoise.frameSize || 480;
-      this.isRnnoiseLoaded = true;
-      console.log('[Capto AI ANC] RNNoise Neural Network WASM Engine successfully initialized (Frame Size: ' + this.frameSize + ')');
-    } catch (err) {
-      console.warn('[Capto AI ANC] RNNoise pre-load fallback:', err);
-    }
   }
 
   async buildAudioStream(micStream, systemStream = null) {
@@ -85,85 +54,68 @@ class FligoAudioEngine {
     this.systemStream = systemStream;
     this.mixedDestination = this.audioCtx.createMediaStreamDestination();
 
-    // Ensure AudioContext is active and not suspended
     if (this.audioCtx.state === 'suspended') {
       try {
         await this.audioCtx.resume();
       } catch (e) {}
     }
 
-    // Ensure RNNoise is loaded
-    if (!this.isRnnoiseLoaded) {
-      await this.preloadRnnoise();
-    }
-
-    // 1. Microphone AI DSP Pipeline
+    // 1. Microphone Studio DSP Pipeline
     if (this.micStream && this.micStream.getAudioTracks().length > 0) {
       this.micSource = this.audioCtx.createMediaStreamSource(this.micStream);
 
-      // Highpass filter (cuts desk rumbles, laptop chassis vibrations < 85Hz)
+      // Highpass filter (cuts desk rumbles, laptop chassis vibrations < 80Hz)
       this.highpassFilter = this.audioCtx.createBiquadFilter();
       this.highpassFilter.type = 'highpass';
-      this.highpassFilter.frequency.value = 85;
-      this.highpassFilter.Q.value = 0.7;
+      this.highpassFilter.frequency.value = 80;
+      this.highpassFilter.Q.value = 0.707;
 
-      // Lowpass filter (cuts high-frequency electrical hiss > 15kHz)
-      this.lowpassFilter = this.audioCtx.createBiquadFilter();
-      this.lowpassFilter.type = 'lowpass';
-      this.lowpassFilter.frequency.value = 15000;
-      this.lowpassFilter.Q.value = 0.7;
+      // 50Hz / 60Hz AC Electrical & Laptop Fan Hum Notch Filter
+      this.notchFilter = this.audioCtx.createBiquadFilter();
+      this.notchFilter.type = 'notch';
+      this.notchFilter.frequency.value = 55;
+      this.notchFilter.Q.value = 3.5;
 
-      // Raw Analyser Node (Captures audio BEFORE AI ANC denoise)
-      this.rawAnalyserNode = this.audioCtx.createAnalyser();
-      this.rawAnalyserNode.fftSize = 512;
-      this.rawAnalyserNode.smoothingTimeConstant = 0.3;
-
-      // Real-Time RNNoise WASM Neural Processor Node
-      this.rnnoiseNode = this.createRnnoiseProcessor();
-
-      // Vocal Clarity Peaking Filter (+2.2dB at 2.6kHz for broadcast voice presence)
+      // Vocal Clarity Peaking Filter (+3.0dB at 2.8kHz for broadcast voice presence)
       this.speechEnhancerFilter = this.audioCtx.createBiquadFilter();
       this.speechEnhancerFilter.type = 'peaking';
-      this.speechEnhancerFilter.frequency.value = 2600;
-      this.speechEnhancerFilter.gain.value = 2.2;
-      this.speechEnhancerFilter.Q.value = 0.9;
+      this.speechEnhancerFilter.frequency.value = 2800;
+      this.speechEnhancerFilter.gain.value = 3.0;
+      this.speechEnhancerFilter.Q.value = 1.0;
 
-      // Active Dynamic Noise Gate Gain Node
-      this.gateGainNode = this.audioCtx.createGain();
-      this.gateGainNode.gain.value = this.isMuted ? 0.0 : 1.0;
-
-      // Broadcast Studio Dynamics Compressor
+      // Broadcast Studio Dynamics Compressor (levels quiet vs loud speech naturally)
       this.compressorNode = this.audioCtx.createDynamicsCompressor();
       this.compressorNode.threshold.value = -24;
       this.compressorNode.knee.value = 12;
-      this.compressorNode.ratio.value = 3.5;
+      this.compressorNode.ratio.value = 4.0;
       this.compressorNode.attack.value = 0.003;
       this.compressorNode.release.value = 0.12;
 
-      // Clean Output Analyser Node (Captures audio AFTER AI ANC denoise)
+      // Studio Dynamic Noise Gate Gain Node
+      this.gateGainNode = this.audioCtx.createGain();
+      this.gateGainNode.gain.value = this.isMuted ? 0.0 : 1.0;
+
+      // Analysers
       this.cleanAnalyserNode = this.audioCtx.createAnalyser();
       this.cleanAnalyserNode.fftSize = 512;
       this.cleanAnalyserNode.smoothingTimeConstant = 0.3;
       this.analyserNode = this.cleanAnalyserNode;
+      this.rawAnalyserNode = this.cleanAnalyserNode;
 
-      // Connect Mic DSP Chain:
-      // Mic -> Highpass -> Lowpass -> [Raw Analyser] & [RNNoise AI ANC]
+      // Connect DSP Chain:
+      // Mic -> Highpass -> Notch -> Speech Enhancer -> Compressor -> Gate -> Analyser -> Mixed Output
       this.micSource.connect(this.highpassFilter);
-      this.highpassFilter.connect(this.lowpassFilter);
-      this.lowpassFilter.connect(this.rawAnalyserNode);
-      this.lowpassFilter.connect(this.rnnoiseNode);
-
-      // RNNoise -> Speech Enhancer -> Noise Gate -> Compressor -> [Clean Analyser] & Mixed Output
-      this.rnnoiseNode.connect(this.speechEnhancerFilter);
-      this.speechEnhancerFilter.connect(this.gateGainNode);
-      this.gateGainNode.connect(this.compressorNode);
-      this.compressorNode.connect(this.cleanAnalyserNode);
-      this.compressorNode.connect(this.mixedDestination);
+      this.highpassFilter.connect(this.notchFilter);
+      this.notchFilter.connect(this.speechEnhancerFilter);
+      this.speechEnhancerFilter.connect(this.compressorNode);
+      this.compressorNode.connect(this.gateGainNode);
+      this.gateGainNode.connect(this.cleanAnalyserNode);
+      this.gateGainNode.connect(this.mixedDestination);
 
       // Connect zero-gain node to audioCtx.destination to ensure Web Audio graph continuously pumps
       this.silentMonitorGain = this.audioCtx.createGain();
       this.silentMonitorGain.gain.value = 0.0;
-      this.compressorNode.connect(this.silentMonitorGain);
+      this.gateGainNode.connect(this.silentMonitorGain);
       this.silentMonitorGain.connect(this.audioCtx.destination);
 
       this.startAdaptiveNoiseGate();
@@ -181,103 +133,34 @@ class FligoAudioEngine {
     return this.mixedDestination.stream;
   }
 
-  createRnnoiseProcessor() {
-    const bufferSize = 1024;
-    const processor = this.audioCtx.createScriptProcessor(bufferSize, 1, 1);
-
-    if (this.rnnoise && !this.denoiseState) {
-      try {
-        this.denoiseState = this.rnnoise.createDenoiseState();
-      } catch (e) {
-        console.warn('[Capto AI ANC] Error creating DenoiseState:', e);
-      }
-    }
-
-    const frameSize = this.frameSize || 480;
-    const inputFifo = [];
-    const outputFifo = [];
-    const frameBuffer = new Float32Array(frameSize);
-    const rawFrameBuffer = new Float32Array(frameSize);
-
-    processor.onaudioprocess = (e) => {
-      const input = e.inputBuffer.getChannelData(0);
-      const output = e.outputBuffer.getChannelData(0);
-
-      if (this.isMuted) {
-        output.fill(0);
-        return;
-      }
-
-      // If AI ANC is disabled or WASM state is not ready, pass raw audio through directly
-      if (!this.isAiAncEnabled || !this.denoiseState || !this.isNoiseSuppressionEnabled) {
-        output.set(input);
-        return;
-      }
-
-      // Push incoming samples into FIFO
-      for (let i = 0; i < input.length; i++) {
-        inputFifo.push(input[i]);
-      }
-
-      // Process complete 480-sample frames with RNNoise AI model
-      while (inputFifo.length >= frameSize) {
-        for (let i = 0; i < frameSize; i++) {
-          const s = inputFifo.shift();
-          rawFrameBuffer[i] = s;
-          frameBuffer[i] = s * 32767.0; // Scale float [-1.0, 1.0] to 16-bit PCM range
-        }
-
-        let vadProb = 0;
-        try {
-          vadProb = this.denoiseState.processFrame(frameBuffer);
-          this.lastVad = vadProb;
-        } catch (procErr) {
-          console.warn('[Capto AI ANC] Frame processing error:', procErr);
-          for (let i = 0; i < frameSize; i++) {
-            frameBuffer[i] = rawFrameBuffer[i] * 32767.0;
-          }
-        }
-
-        const strength = Math.max(0.0, Math.min(1.0, this.ancStrength));
-
-        // Push denoised samples with strength blend to output FIFO
-        for (let i = 0; i < frameSize; i++) {
-          const denoised = frameBuffer[i] / 32767.0;
-          const blended = (1.0 - strength) * rawFrameBuffer[i] + strength * denoised;
-          outputFifo.push(blended);
-        }
-      }
-
-      // Write available denoised samples to output buffer
-      for (let i = 0; i < output.length; i++) {
-        if (outputFifo.length > 0) {
-          output[i] = outputFifo.shift();
-        } else {
-          output[i] = input[i]; // Fallback if underflow
-        }
-      }
-    };
-
-    return processor;
-  }
-
   setMute(muted) {
-    this.isMuted = muted;
+    this.isMuted = !!muted;
     if (this.gateGainNode && this.audioCtx && this.audioCtx.state !== 'closed') {
       const now = this.audioCtx.currentTime;
       this.gateGainNode.gain.cancelScheduledValues(now);
-      this.gateGainNode.gain.setValueAtTime(muted ? 0.0 : 1.0, now);
+      this.gateGainNode.gain.setValueAtTime(this.isMuted ? 0.0 : 1.0, now);
     }
   }
 
-  setAiAncEnabled(enabled) {
-    this.isAiAncEnabled = !!enabled;
-    console.log('[Capto AI ANC] Deep Neural ANC state set to:', this.isAiAncEnabled);
+  setVoiceCompressor(enabled) {
+    this.isVoiceCompressorEnabled = !!enabled;
+    if (this.compressorNode && this.speechEnhancerFilter && this.audioCtx) {
+      if (this.isVoiceCompressorEnabled) {
+        this.compressorNode.threshold.value = -24;
+        this.compressorNode.ratio.value = 4.0;
+        this.speechEnhancerFilter.gain.value = 3.0;
+        this.highpassFilter.frequency.value = 80;
+      } else {
+        this.compressorNode.threshold.value = 0;
+        this.compressorNode.ratio.value = 1.0;
+        this.speechEnhancerFilter.gain.value = 0.0;
+        this.highpassFilter.frequency.value = 20;
+      }
+    }
   }
 
-  setAncStrength(strength) {
-    this.ancStrength = Math.max(0.0, Math.min(1.0, strength));
-    console.log('[Capto AI ANC] ANC Strength adjusted to:', Math.round(this.ancStrength * 100) + '%');
+  setNoiseSuppression(enabled) {
+    this.setVoiceCompressor(enabled);
   }
 
   startAdaptiveNoiseGate() {
@@ -302,20 +185,21 @@ class FligoAudioEngine {
       }
       const rms = Math.sqrt(sumSquares / dataArray.length);
 
-      if (this.isNoiseSuppressionEnabled) {
-        const isSpeaking = rms > this.noiseGateThreshold || (this.isAiAncEnabled && this.lastVad > 0.5);
+      if (this.isVoiceCompressorEnabled) {
+        const isSpeaking = rms > this.noiseGateThreshold;
 
         if (isSpeaking) {
           this.targetGateGain = 1.0;
           this.currentGateGain += (this.targetGateGain - this.currentGateGain) * 0.4;
         } else {
-          this.targetGateGain = 0.02;
-          this.currentGateGain += (this.targetGateGain - this.currentGateGain) * 0.08;
+          // Dynamic studio noise gate attenuation (-36dB)
+          this.targetGateGain = 0.015;
+          this.currentGateGain += (this.targetGateGain - this.currentGateGain) * 0.10;
         }
 
         const now = this.audioCtx.currentTime;
         this.gateGainNode.gain.cancelScheduledValues(now);
-        this.gateGainNode.gain.setValueAtTime(this.currentGateGain, now);
+        this.gateGainNode.gain.setValueAtTime(Math.max(0.015, Math.min(1.0, this.currentGateGain)), now);
       } else {
         this.gateGainNode.gain.setValueAtTime(1.0, this.audioCtx.currentTime);
       }
@@ -326,33 +210,8 @@ class FligoAudioEngine {
     processGate();
   }
 
-  setNoiseSuppression(enabled) {
-    this.isNoiseSuppressionEnabled = enabled;
-    this.setAiAncEnabled(enabled);
-    if (this.highpassFilter && this.gateGainNode) {
-      if (enabled) {
-        this.highpassFilter.frequency.value = 85;
-        this.lowpassFilter.frequency.value = 15000;
-      } else {
-        this.highpassFilter.frequency.value = 10;
-        this.lowpassFilter.frequency.value = 22000;
-        if (this.audioCtx && !this.isMuted) {
-          this.gateGainNode.gain.setValueAtTime(1.0, this.audioCtx.currentTime);
-        }
-      }
-    }
-  }
-
   setSilenceRemoval(enabled) {
     this.isSilenceRemovalEnabled = enabled;
-  }
-
-  setMute(muted) {
-    this.isMuted = !!muted;
-    if (this.gateGainNode && this.audioCtx) {
-      const targetGain = this.isMuted ? 0.0 : 1.0;
-      this.gateGainNode.gain.setValueAtTime(targetGain, this.audioCtx.currentTime);
-    }
   }
 
   /**
