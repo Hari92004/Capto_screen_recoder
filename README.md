@@ -55,28 +55,31 @@ npm start
 
 ## ✨ Key Features
 
-### 🎙️ 1. Offline Deep Neural Network AI Active Noise Cancellation (RNNoise WASM)
-- **Zero Cloud Backend / 100% Offline**: Runs a lightweight recurrent neural network (RNN/GRU) directly on your local CPU via WebAssembly with zero internet requirements and zero subscription cost.
-- **Total Background Noise Elimination**: Real-time AI filtering eliminates laptop fans, AC hums, background chatter, traffic, and mechanical keyboard clicks without muffling your natural voice.
-- **Adjustable Studio ANC Strength**: Customize noise suppression intensity (Natural Studio to Maximum AI Suppression).
-- **Adaptive True RMS Noise Gate**: Instantly mutes room noise when you pause speaking.
-- **Vocal Clarity Booster**: Built-in 2.6kHz peaking filter for broadcast-grade voice presence.
-- **Fail-Safe Hot-Swap Auto-Recovery**: If you unplug your earphones or Bluetooth headset during a recording, Capto automatically switches to your laptop's internal microphone in 0.1 seconds without interrupting or corrupting the video!
+### 🎙️ 1. Broadcast AI Voice Dynamics Compressor & Vocal Enhancer
+- **Zero Latency Native DSP**: Powered by real-time Web Audio API with zero CPU overhead, zero delay, and natural studio vocal warmth.
+- **Broadcast Studio Dynamics Compression**: Smoothly levels quiet whispers and loud speech without robotic muffling or clipping (-24dB threshold, 4:1 broadcast ratio).
+- **Vocal Presence Booster**: Built-in 2.8kHz (+3.0dB) peaking equalizer for crisp, professional broadcast voice intelligibility.
+- **Sub-Bass & Hum Elimination**: 80Hz High-Pass filter cuts desk vibrations and laptop chassis rumble, while a 55Hz notch filter eliminates electrical hum and AC fan drone.
+- **Adaptive Studio Noise Gate**: Dynamically suppresses ambient room floor noise (-36dB) when you are not speaking.
+- **Fail-Safe Hot-Swap Auto-Recovery**: If you unplug your earphones or Bluetooth headset during a recording, Capto automatically switches to your laptop's internal microphone in 0.1 seconds without interrupting or corrupting the recording!
 - **One-Click Mic Mute**: Dedicated mute/unmute button on both the studio dashboard and the floating toolbar.
 
-### 🎙️ 2. Dedicated Voice Recording Studio with Live Pitch Tuner & Dual ANC Spectrum
-- **Pure Voice Studio Tab**: Dedicated audio-only recording studio with zero video clutter.
+### 🎙️ 2. Dedicated Voice Recording Studio with Panoramic Oscilloscope & Pitch Tuner
+- **Pure Voice Studio Tab**: Dedicated audio-only recording environment with real-time acoustics monitoring.
+- **Panoramic Studio Vocal Oscilloscope**: 48 kHz HD real-time soundwave monitor animating vocal amplitude and harmonics.
 - **Real-Time Pitch & Musical Note Detector**: Autocorrelation algorithm tracks fundamental pitch (Hz), nearest musical note (e.g. `D3`, `A4`), and vocal range classification (`Deep Bass`, `Baritone`, `Tenor`, `Soprano`).
-- **Dual Real-Time Spectrum (Before vs After AI ANC)**: Side-by-side live canvas showcasing raw input (with noise spikes) vs deep neural clean output.
-- **Voice Analytics**: Real-time dB volume meters, Voice Activity (VAD % confidence), and noise suppression cut depth.
+- **Live Voice VU Meter & 16-Band Waveform Equalizer**: Smooth 60 FPS bouncing visualizer confirming microphone pickup with live dB readouts.
+- **Active Dashboard Mode**: Voice recording keeps the Studio Dashboard open so you can monitor your pitch, volume levels, and visualizers live without unexpected window minimization!
 
-### 📚 3. Multi-Category Studio Library (Videos & Voice Notes)
-- **Segmented Filter Tabs**: Instant switching between `🎬 Videos`, `🎙️ Voice Notes`, and `All Items`.
-- **Integrated Audio Player Cards**: Interactive waveform soundwave playback for voice recordings with instant reveal in File Explorer.
+### 📚 3. 2-Section Saved Media Library (Videos | Voice)
+- **2-Segment Split Switcher**: Dedicated `🎬 Videos` and `🎙️ Voice` sections with real-time media count badges.
+- **Interactive Video Preview Cards**: Instant video thumbnail playback with play/pause overlays, resolution/size indicators, and creation timestamps.
+- **Interactive Voice Player Cards**: Audio soundwave playback with progress scrubbing, reveal in File Explorer, and safe deletion.
+- **Universal Save Location**: One-click **"Open Folder"** jumps straight to `Videos/Screen Recordings`.
 
-### 📊 4. Real-Time Live Audio VU Meter & Equalizer
+### 📊 4. Real-Time Studio VU Meter & Equalizer
 - **Dynamic VU Level Bar**: Live 0% to 100% volume level tracking with color-graded thresholds (Green ➔ Orange ➔ Red).
-- **12-Band Equalizer Waveform**: Smooth 60 FPS bouncing visualizer confirming microphone pickup.
+- **16-Band Equalizer Waveform**: Smooth 60 FPS bouncing visualizer confirming microphone pickup.
 - **Live Status Indicator**: Real-time badge switching between `Speaking...` and `Mic Ready` / `Muted`.
 
 ### 🎛️ 5. Hardware Device Selectors
@@ -94,10 +97,9 @@ npm start
 - **📷 Webcam Only**: Dedicated camera studio recording with natural selfie mirror reflection.
 
 ### 💎 8. Modern Glassmorphic Studio & Floating Island Toolbar
-- **Auto-Minimize on Record**: Studio dashboard automatically minimizes to taskbar when recording starts.
+- **Smart Auto-Minimize on Video Record**: Video recording automatically minimizes the main window and summons the floating Dynamic Island toolbar.
 - **Floating Island Pill**: Movable top pill with live timer, pause/resume, snapshot, and mic mute (automatically hidden from recorded output).
 - **Universal Format Playback**: Generates clean **MP4 / WebM** files with patched EBML duration headers that play seamlessly in Windows Media Player, QuickTime, VLC, and web browsers.
-- **Dedicated Save Folder**: All recordings and screenshots are saved in `Videos/Screen Recordings`.
 
 ---
 
