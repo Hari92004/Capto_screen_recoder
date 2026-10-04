@@ -13,7 +13,7 @@ class CaptoRecorder {
     this.elapsedSeconds = 0;
     this.recordingStartTime = 0;
 
-    this.currentMode = 'fullscreen'; // 'fullscreen' | 'region' | 'dual' | 'camera'
+    this.currentMode = 'fullscreen'; // 'fullscreen' | 'region' | 'dual'
     this.selectedRegion = null;      // { x, y, width, height }
     this.cameraShape = 'circle';     // 'circle' | 'rounded' | 'rect'
     this.cameraSize = 190;
@@ -191,12 +191,10 @@ class CaptoRecorder {
 
     try {
       if (!this.screenStream || this.screenStream.getVideoTracks().length === 0 || this.screenStream.getVideoTracks()[0].readyState === 'ended') {
-        if (this.currentMode !== 'camera') {
-          await this.startScreenStream();
-        }
+        await this.startScreenStream();
       }
 
-      if ((this.currentMode === 'dual' || this.currentMode === 'camera') && (!this.cameraStream || this.cameraStream.getVideoTracks().length === 0 || this.cameraStream.getVideoTracks()[0].readyState === 'ended')) {
+      if (this.currentMode === 'dual' && (!this.cameraStream || this.cameraStream.getVideoTracks().length === 0 || this.cameraStream.getVideoTracks()[0].readyState === 'ended')) {
         await this.startCamera();
       }
 
@@ -265,51 +263,6 @@ class CaptoRecorder {
 
         const canvasStream = this.canvas.captureStream(60);
         videoTrack = canvasStream.getVideoTracks()[0];
-      } else if (this.currentMode === 'camera') {
-        // Mirrored Selfie View + Brightness & Smoothness Filter for Webcam Only Recording
-        if (!this.camVideoElement) {
-          this.camVideoElement = document.createElement('video');
-          this.camVideoElement.muted = true;
-          this.camVideoElement.autoplay = true;
-          this.camVideoElement.playsInline = true;
-        }
-        this.camVideoElement.srcObject = this.cameraStream;
-        this.camVideoElement.play().catch(() => {});
-
-        const camTrack = this.cameraStream ? this.cameraStream.getVideoTracks()[0] : null;
-        const settings = camTrack && camTrack.getSettings ? camTrack.getSettings() : {};
-        const nativeW = settings.width || 1280;
-        const nativeH = settings.height || 720;
-
-        this.canvas.width = nativeW;
-        this.canvas.height = nativeH;
-
-        const drawCamFrame = () => {
-          if (!this.isRecording) return;
-          try {
-            if (this.camVideoElement && this.camVideoElement.readyState >= 2) {
-              this.ctx.save();
-              this.ctx.clearRect(0, 0, nativeW, nativeH);
-              // Face Brightness, Smoothness & Noise Reduction Filters
-              this.ctx.filter = this.getCameraFilterString();
-              if (this.isCameraFlipped) {
-                // Natural Horizontal Mirror Flip
-                this.ctx.translate(nativeW, 0);
-                this.ctx.scale(-1, 1);
-              }
-              this.ctx.drawImage(this.camVideoElement, 0, 0, nativeW, nativeH);
-              this.ctx.restore();
-            }
-          } catch (e) {}
-        };
-
-        drawCamFrame();
-
-        if (this.compositorIntervalId) clearInterval(this.compositorIntervalId);
-        this.compositorIntervalId = setInterval(drawCamFrame, 1000 / 60);
-
-        const canvasStream = this.canvas.captureStream(60);
-        videoTrack = canvasStream.getVideoTracks()[0];
       } else {
         videoTrack = this.screenStream ? this.screenStream.getVideoTracks()[0] : null;
       }
@@ -327,14 +280,12 @@ class CaptoRecorder {
       const finalStream = new MediaStream(combinedTracks);
       this.recordedChunks = [];
 
-      // High-Fidelity Codec Hierarchy (VP9 / H264 / AV1)
+      // High-Fidelity Capture with Opus studio audio (VP9 / H.264)
       const codecs = [
         'video/webm;codecs=vp9,opus',
         'video/webm;codecs=h264,opus',
-        'video/mp4;codecs=avc1,mp4a.40.2',
         'video/webm;codecs=vp8,opus',
-        'video/webm',
-        'video/mp4'
+        'video/webm'
       ];
 
       let chosenMime = '';
@@ -347,7 +298,7 @@ class CaptoRecorder {
       if (!chosenMime) chosenMime = 'video/webm';
       this.selectedMimeType = chosenMime;
 
-      // Ultra-HD High Bitrate (16 Mbps)
+      // Ultra-HD High Bitrate (16 Mbps video, 256 kbps studio audio)
       this.mediaRecorder = new MediaRecorder(finalStream, {
         mimeType: chosenMime,
         videoBitsPerSecond: 16000000,
@@ -544,22 +495,18 @@ class CaptoRecorder {
       case 'fullscreen': return 'FullScreen';
       case 'region': return 'CustomCrop';
       case 'dual': return 'Face+Screen';
-      case 'camera': return 'WebcamOnly';
       default: return 'ScreenRecording';
     }
   }
 
   async saveRecordingFile() {
     const isVoice = this.currentMode === 'voice';
-    const isMp4 = this.selectedMimeType.includes('mp4');
-    const extension = isVoice ? 'webm' : (isMp4 ? 'mp4' : 'webm');
+    const extension = isVoice ? 'webm' : 'mp4';
     const blob = new Blob(this.recordedChunks, { type: this.selectedMimeType });
     let arrayBuffer = await blob.arrayBuffer();
 
     const totalDurationMs = Math.max(1000, (this.elapsedSeconds || 1) * 1000);
-    if (!isMp4) {
-      arrayBuffer = this.fixWebmDuration(arrayBuffer, totalDurationMs);
-    }
+    arrayBuffer = this.fixWebmDuration(arrayBuffer, totalDurationMs);
 
     const uint8Array = new Uint8Array(arrayBuffer);
 
@@ -583,10 +530,10 @@ class CaptoRecorder {
   }
 
   async takeScreenshot() {
-    if (!this.screenStream && this.currentMode !== 'camera') {
+    if (!this.screenStream) {
       await this.startScreenStream();
     }
-    if ((this.currentMode === 'dual' || this.currentMode === 'camera') && !this.cameraStream) {
+    if (this.currentMode === 'dual' && !this.cameraStream) {
       await this.startCamera();
     }
 
@@ -603,41 +550,22 @@ class CaptoRecorder {
     this.canvas.height = outHeight;
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    if (this.currentMode === 'camera') {
-      this.ctx.filter = this.getCameraFilterString();
-      if (this.cameraStream) {
-        const camVideo = document.createElement('video');
-        camVideo.muted = true;
-        camVideo.autoplay = true;
-        camVideo.srcObject = this.cameraStream;
-        await camVideo.play().catch(() => {});
+    this.ctx.filter = 'none';
+    if (!this.cropVideoElement) {
+      this.cropVideoElement = document.createElement('video');
+      this.cropVideoElement.muted = true;
+      this.cropVideoElement.autoplay = true;
+      this.cropVideoElement.playsInline = true;
+    }
+    this.cropVideoElement.srcObject = this.screenStream;
+    await this.cropVideoElement.play().catch(() => {});
 
-        this.ctx.save();
-        if (this.isCameraFlipped) {
-          this.ctx.translate(this.canvas.width, 0);
-          this.ctx.scale(-1, 1);
-        }
-        this.ctx.drawImage(camVideo, 0, 0, this.canvas.width, this.canvas.height);
-        this.ctx.restore();
-      }
+    if (isRegion) {
+      const rx = Math.max(0, Math.min(nativeW - outWidth, Math.round(this.selectedRegion.x)));
+      const ry = Math.max(0, Math.min(nativeH - outHeight, Math.round(this.selectedRegion.y)));
+      this.ctx.drawImage(this.cropVideoElement, rx, ry, outWidth, outHeight, 0, 0, outWidth, outHeight);
     } else {
-      this.ctx.filter = 'none';
-      if (!this.cropVideoElement) {
-        this.cropVideoElement = document.createElement('video');
-        this.cropVideoElement.muted = true;
-        this.cropVideoElement.autoplay = true;
-        this.cropVideoElement.playsInline = true;
-      }
-      this.cropVideoElement.srcObject = this.screenStream;
-      await this.cropVideoElement.play().catch(() => {});
-
-      if (isRegion) {
-        const rx = Math.max(0, Math.min(nativeW - outWidth, Math.round(this.selectedRegion.x)));
-        const ry = Math.max(0, Math.min(nativeH - outHeight, Math.round(this.selectedRegion.y)));
-        this.ctx.drawImage(this.cropVideoElement, rx, ry, outWidth, outHeight, 0, 0, outWidth, outHeight);
-      } else {
-        this.ctx.drawImage(this.cropVideoElement, 0, 0, this.canvas.width, this.canvas.height);
-      }
+      this.ctx.drawImage(this.cropVideoElement, 0, 0, this.canvas.width, this.canvas.height);
     }
 
     const dataUrl = this.canvas.toDataURL('image/png');

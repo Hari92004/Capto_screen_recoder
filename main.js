@@ -1,6 +1,13 @@
 const { app, BrowserWindow, ipcMain, desktopCapturer, screen, globalShortcut, dialog, shell, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { execFile } = require('child_process');
+let ffmpegPath = null;
+try {
+  ffmpegPath = require('ffmpeg-static');
+} catch (e) {
+  console.warn('[Capto] ffmpeg-static not available:', e);
+}
 
 // Set Application Name & User Model ID for Windows Taskbar Branding
 app.name = 'Capto';
@@ -68,15 +75,15 @@ function createMainWindow() {
     title: 'Capto',
     width: 640,
     height: 740,
-    minWidth: 640,
+    minWidth: 420,
     maxWidth: 640,
-    minHeight: 740,
+    minHeight: 52,
     maxHeight: 740,
     frame: false,
-    transparent: false,
-    backgroundColor: '#0e121a',
+    transparent: true,
+    backgroundColor: '#00000000',
     hasShadow: true,
-    resizable: false, // Strict fixed dimensions
+    resizable: true, // Allows smooth dynamic island morphing
     maximizable: false,
     fullscreenable: false,
     icon: appIcon || appIconPath,
@@ -429,6 +436,9 @@ ipcMain.on('cancel-region-selector', () => {
     } catch (e) {}
     regionSelectorWindow = null;
   }
+  if (mainWindow) {
+    mainWindow.webContents.send('on-region-cancel');
+  }
 });
 
 // Crop Border Controls
@@ -513,12 +523,87 @@ ipcMain.on('update-toolbar-timer', (event, timeStr) => {
   }
 });
 
-// Save Recorded Video Buffer
+// Dynamic Island Transform Mode for Custom Crop
+const ISLAND_WIDTH = 440;
+const ISLAND_HEIGHT = 52;
+const FULL_WIDTH = 640;
+const FULL_HEIGHT = 740;
+
+ipcMain.on('set-dynamic-island-mode', (event, { enabled, collapsed }) => {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  try {
+    if (enabled) {
+      mainWindow.setAlwaysOnTop(true, 'screen-saver');
+      if (collapsed) {
+        const b = mainWindow.getBounds();
+        const newX = Math.round(b.x + (b.width - ISLAND_WIDTH) / 2);
+        mainWindow.setBounds({ x: newX, y: b.y, width: ISLAND_WIDTH, height: ISLAND_HEIGHT });
+      } else {
+        const b = mainWindow.getBounds();
+        const newX = Math.round(b.x - (FULL_WIDTH - b.width) / 2);
+        mainWindow.setBounds({ x: newX, y: b.y, width: FULL_WIDTH, height: FULL_HEIGHT });
+      }
+    } else {
+      mainWindow.setAlwaysOnTop(false);
+      const b = mainWindow.getBounds();
+      const newX = Math.round(b.x - (FULL_WIDTH - b.width) / 2);
+      mainWindow.setBounds({ x: newX, y: b.y, width: FULL_WIDTH, height: FULL_HEIGHT });
+    }
+  } catch (err) {
+    console.warn('[Capto] Error changing dynamic island bounds:', err);
+  }
+});
+
+// Save Recorded Video Buffer (with FFmpeg AAC/H.264 MP4 encoder for pristine audio)
 ipcMain.handle('save-recording', async (event, { buffer, filename }) => {
   try {
     const targetDir = getRecordingsDir();
     const filePath = path.join(targetDir, filename);
     const nodeBuf = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
+
+    // If saving an MP4 video recording and ffmpeg is available, convert WebM capture to standard MP4 with pristine AAC audio
+    if (filename.toLowerCase().endsWith('.mp4') && ffmpegPath && fs.existsSync(ffmpegPath)) {
+      const tempWebm = path.join(app.getPath('temp'), `capto_raw_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.webm`);
+      try {
+        fs.writeFileSync(tempWebm, nodeBuf);
+        const converted = await new Promise((resolve) => {
+          execFile(
+            ffmpegPath,
+            [
+              '-y',
+              '-i', tempWebm,
+              '-c:v', 'libx264',
+              '-preset', 'ultrafast',
+              '-crf', '20',
+              '-c:a', 'aac',
+              '-b:a', '192k',
+              '-ar', '48000',
+              '-movflags', '+faststart',
+              filePath
+            ],
+            { timeout: 180000 },
+            (err) => {
+              try { if (fs.existsSync(tempWebm)) fs.unlinkSync(tempWebm); } catch (e) {}
+              if (err) {
+                console.warn('[Capto] FFmpeg conversion error, falling back to direct write:', err);
+                resolve(false);
+              } else {
+                resolve(true);
+              }
+            }
+          );
+        });
+
+        if (converted && fs.existsSync(filePath) && fs.statSync(filePath).size > 0) {
+          console.log('[Capto] Saved pristine MP4 video with AAC audio:', filePath);
+          return { success: true, filePath };
+        }
+      } catch (ffErr) {
+        console.warn('[Capto] FFmpeg execution error:', ffErr);
+      }
+    }
+
+    // Direct write fallback
     fs.writeFileSync(filePath, nodeBuf);
     console.log('[Capto] Saved recording:', filePath);
     return { success: true, filePath };

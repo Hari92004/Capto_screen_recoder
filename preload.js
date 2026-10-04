@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   sendRegionSelected: (region) => ipcRenderer.send('region-selected', region),
   cancelRegionSelector: () => ipcRenderer.send('cancel-region-selector'),
   onRegionSelected: (callback) => ipcRenderer.on('on-region-selected', (event, region) => callback(region)),
+  onRegionCancel: (callback) => ipcRenderer.on('on-region-cancel', () => callback()),
 
   // Crop Border Outline & Interactive Resize
   showCropBorder: (region) => ipcRenderer.send('show-crop-border', region),
@@ -43,13 +44,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onStopCamFeed: (callback) => ipcRenderer.on('stop-cam-feed', () => callback()),
 
 
-  // Floating Dynamic Island Toolbar
+  // Floating Dynamic Island Toolbar & Mode
   showToolbar: () => ipcRenderer.send('show-toolbar'),
   hideToolbar: () => ipcRenderer.send('hide-toolbar'),
   sendToolbarAction: (action) => ipcRenderer.send('toolbar-action', action),
   updateToolbarTimer: (timeStr) => ipcRenderer.send('update-toolbar-timer', timeStr),
   onFromToolbar: (callback) => ipcRenderer.on('from-toolbar', (event, action) => callback(action)),
   onSyncTimer: (callback) => ipcRenderer.on('sync-timer', (event, timeStr) => callback(timeStr)),
+  setDynamicIslandMode: (options) => ipcRenderer.send('set-dynamic-island-mode', options),
 
   // Hotkeys
   onHotkeyRecord: (callback) => ipcRenderer.on('hotkey-toggle-record', () => callback()),

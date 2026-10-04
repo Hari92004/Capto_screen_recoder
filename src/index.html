@@ -9,8 +9,33 @@
 <body>
 
   <!-- Main iPhone Style Liquid Glass Window -->
-  <div class="app-window">
+  <div class="app-window" id="app-window">
     
+    <!-- Dynamic Island Collapsed Mini Bar (Visible in Custom Crop Island Mode) -->
+    <div class="dynamic-island-bar" id="dynamic-island-bar" style="display: none;">
+      <div class="di-brand-group">
+        <img src="assets/icon.png" class="brand-logo-img" alt="Capto" />
+        <span class="status-dot" id="di-status-dot"></span>
+        <span class="di-brand-title">CAPTO CROP</span>
+      </div>
+
+      <div class="di-crop-info" id="di-crop-info" title="Selected Crop Recording Area">
+        <span class="di-crop-icon">📐</span>
+        <span class="di-crop-text" id="di-crop-text">1920 × 1080</span>
+      </div>
+
+      <div class="di-actions">
+        <button class="di-action-btn" id="btn-di-reselect" title="Re-select Area">✂️ Crop</button>
+        <button class="di-action-btn di-rec-btn" id="btn-di-rec" title="Start / Stop Recording">
+          <span class="di-rec-dot" id="di-rec-dot"></span>
+          <span id="di-rec-label">REC</span>
+        </button>
+        <div class="di-hover-hint" id="di-hover-hint" title="Hover to expand full page">
+          <span>▼</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Window Header / Titlebar with Standard Controls on the Right -->
     <div class="window-titlebar">
       
@@ -29,6 +54,11 @@
         <button class="pill-tab" id="tab-voice">Voice</button>
         <button class="pill-tab" id="tab-gallery">Library</button>
       </div>
+
+      <!-- Island Quick Collapse Button for Custom Crop Mode -->
+      <button class="glass-action-btn island-collapse-btn" id="btn-collapse-to-island" style="display: none;" title="Collapse to Dynamic Island">
+        <span>▲ Island</span>
+      </button>
 
       <!-- Normal Standard Window Controls (Minimize & Close) on the Right -->
       <div class="standard-window-controls">
@@ -67,11 +97,6 @@
           <div class="mode-item" data-mode="dual" id="mode-dual">
             <span class="mode-emoji">✨</span>
             <span class="mode-text">Screen + Face</span>
-          </div>
-
-          <div class="mode-item" data-mode="camera" id="mode-camera">
-            <span class="mode-emoji">📷</span>
-            <span class="mode-text">Webcam Only</span>
           </div>
         </div>
 

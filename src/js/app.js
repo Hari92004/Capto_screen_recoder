@@ -22,6 +22,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   const regionCoordsText = document.getElementById('region-coords-text');
   const btnReselectRegion = document.getElementById('btn-reselect-region');
 
+  const appWindow = document.getElementById('app-window') || document.querySelector('.app-window');
+  const dynamicIslandBar = document.getElementById('dynamic-island-bar');
+  const diCropText = document.getElementById('di-crop-text');
+  const btnDiReselect = document.getElementById('btn-di-reselect');
+  const btnDiRec = document.getElementById('btn-di-rec');
+  const diRecLabel = document.getElementById('di-rec-label');
+  const diStatusDot = document.getElementById('di-status-dot');
+  const diHoverHint = document.getElementById('di-hover-hint');
+  const btnCollapseToIsland = document.getElementById('btn-collapse-to-island');
+  const windowTitlebar = document.querySelector('.window-titlebar');
+  const appBody = document.querySelector('.app-body');
+
   const previewVideo = document.getElementById('preview-video');
   const pipCameraBox = document.getElementById('pip-camera-box');
   const pipCameraVideo = document.getElementById('pip-camera-video');
@@ -120,6 +132,116 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (btnMinimize) btnMinimize.addEventListener('click', () => window.electronAPI.minimizeWindow());
   }
 
+  // Custom Crop Dynamic Island Mode Controller
+  let isCustomCropIslandMode = false;
+  let isIslandCollapsed = false;
+  let collapseTimeout = null;
+
+  function collapseToIsland() {
+    if (!isCustomCropIslandMode) return;
+    isIslandCollapsed = true;
+    clearTimeout(collapseTimeout);
+
+    if (appWindow) appWindow.classList.add('island-collapsed');
+    if (dynamicIslandBar) dynamicIslandBar.style.display = 'flex';
+    if (windowTitlebar) windowTitlebar.style.display = 'none';
+    if (appBody) appBody.style.display = 'none';
+
+    if (window.electronAPI && window.electronAPI.setDynamicIslandMode) {
+      window.electronAPI.setDynamicIslandMode({ enabled: true, collapsed: true });
+    }
+  }
+
+  function expandFromIsland() {
+    if (!isCustomCropIslandMode) return;
+    clearTimeout(collapseTimeout);
+    if (!isIslandCollapsed) return;
+    isIslandCollapsed = false;
+
+    if (appWindow) appWindow.classList.remove('island-collapsed');
+    if (dynamicIslandBar) dynamicIslandBar.style.display = 'none';
+    if (windowTitlebar) windowTitlebar.style.display = 'flex';
+    if (appBody) appBody.style.display = 'flex';
+
+    if (window.electronAPI && window.electronAPI.setDynamicIslandMode) {
+      window.electronAPI.setDynamicIslandMode({ enabled: true, collapsed: false });
+    }
+  }
+
+  function exitDynamicIsland() {
+    isCustomCropIslandMode = false;
+    isIslandCollapsed = false;
+    clearTimeout(collapseTimeout);
+
+    if (appWindow) appWindow.classList.remove('island-collapsed');
+    if (dynamicIslandBar) dynamicIslandBar.style.display = 'none';
+    if (windowTitlebar) windowTitlebar.style.display = 'flex';
+    if (appBody) appBody.style.display = 'flex';
+    if (btnCollapseToIsland) btnCollapseToIsland.style.display = 'none';
+
+    if (window.electronAPI && window.electronAPI.setDynamicIslandMode) {
+      window.electronAPI.setDynamicIslandMode({ enabled: false, collapsed: false });
+    }
+  }
+
+  // Hover to expand / leave to collapse in Dynamic Island Custom Crop Mode
+  if (appWindow) {
+    appWindow.addEventListener('mouseenter', () => {
+      if (isCustomCropIslandMode && isIslandCollapsed) {
+        expandFromIsland();
+      } else {
+        clearTimeout(collapseTimeout);
+      }
+    });
+
+    appWindow.addEventListener('mouseleave', () => {
+      if (isCustomCropIslandMode && !isIslandCollapsed) {
+        clearTimeout(collapseTimeout);
+        collapseTimeout = setTimeout(() => {
+          collapseToIsland();
+        }, 400);
+      }
+    });
+  }
+
+  if (dynamicIslandBar) {
+    dynamicIslandBar.addEventListener('mouseenter', () => {
+      if (isCustomCropIslandMode && isIslandCollapsed) {
+        expandFromIsland();
+      }
+    });
+  }
+
+  if (diHoverHint) {
+    diHoverHint.addEventListener('click', (e) => {
+      e.stopPropagation();
+      expandFromIsland();
+    });
+  }
+
+  if (btnCollapseToIsland) {
+    btnCollapseToIsland.addEventListener('click', (e) => {
+      e.stopPropagation();
+      collapseToIsland();
+    });
+  }
+
+  if (btnDiReselect) {
+    btnDiReselect.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (window.electronAPI && window.electronAPI.openRegionSelector) {
+        window.electronAPI.openRegionSelector();
+      }
+    });
+  }
+
+  if (btnDiRec) {
+    btnDiRec.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handleToggleRecording();
+    });
+  }
+
   // Navigation Tabs Switcher
   async function switchTab(target) {
     const prevTab = currentActiveTab;
@@ -152,19 +274,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         await stopCameraFeeds();
       } catch (e) {}
+      if (window.electronAPI && window.electronAPI.hideCropBorder) {
+        window.electronAPI.hideCropBorder();
+      }
+      if (isCustomCropIslandMode) {
+        exitDynamicIsland();
+      }
     } else if (prevTab && prevTab !== 'studio') {
       // Returning to Studio - restore active camera mode feed if needed
       try {
         const mode = window.fligoRecorder.currentMode;
-        if (mode === 'camera') {
-          currentCamStream = await window.fligoRecorder.startCamera(selectedCamId);
-          if (currentCamStream && previewVideo) {
-            previewVideo.srcObject = currentCamStream;
-            previewVideo.style.transform = (toggleCamFlip && toggleCamFlip.checked) ? 'scaleX(-1)' : 'none';
-            previewVideo.play().catch(() => {});
-            broadcastCameraFilters();
-          }
-        } else if (mode === 'dual') {
+        if (mode === 'dual') {
           await initPreview('dual');
           const selectedCamLabel = selectCamDevice.options[selectCamDevice.selectedIndex]?.text || '';
           if (window.electronAPI && window.electronAPI.openCameraOverlay) {
@@ -772,14 +892,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       window.fligoRecorder.setCameraDeviceId(selectedCamId);
     }
     
-    if (window.fligoRecorder.currentMode === 'camera') {
-      await stopCameraFeeds();
-      currentCamStream = await window.fligoRecorder.startCamera(selectedCamId);
-      if (currentCamStream && previewVideo) {
-        previewVideo.srcObject = currentCamStream;
-        previewVideo.play().catch(() => {});
-      }
-    } else if (window.fligoRecorder.currentMode === 'dual') {
+    if (window.fligoRecorder.currentMode === 'dual') {
       if (window.electronAPI && window.electronAPI.openCameraOverlay) {
         window.electronAPI.openCameraOverlay({
           shape: window.fligoRecorder.cameraShape,
@@ -801,7 +914,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       pipCameraVideo.srcObject.getTracks().forEach(t => t.stop());
       pipCameraVideo.srcObject = null;
     }
-    if (previewVideo && previewVideo.srcObject && window.fligoRecorder.currentMode !== 'camera' && previewVideo.srcObject !== currentScreenStream) {
+    if (previewVideo && previewVideo.srcObject && previewVideo.srcObject !== currentScreenStream) {
       previewVideo.srcObject.getTracks().forEach(t => t.stop());
     }
     await window.fligoRecorder.stopCamera();
@@ -819,10 +932,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       window.fligoRecorder.setCameraBrightness(b);
       window.fligoRecorder.setCameraSmoothness(s);
       window.fligoRecorder.setCameraNoiseReduction(n);
-    }
-
-    if (window.fligoRecorder.currentMode === 'camera' && previewVideo) {
-      previewVideo.style.filter = window.fligoRecorder.getCameraFilterString();
     }
 
     if (window.electronAPI && window.electronAPI.setCameraFilters) {
@@ -856,9 +965,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (window.fligoRecorder) {
       window.fligoRecorder.setCameraFlipped(isFlipped);
     }
-    if (window.fligoRecorder.currentMode === 'camera' && previewVideo) {
-      previewVideo.style.transform = isFlipped ? 'scaleX(-1)' : 'none';
-    }
     if (pipCameraVideo) {
       pipCameraVideo.style.transform = isFlipped ? 'scaleX(-1)' : 'none';
     }
@@ -883,42 +989,70 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (regionActionBar) regionActionBar.style.display = mode === 'region' ? 'flex' : 'none';
     if (rowCamShape) rowCamShape.style.display = mode === 'dual' ? 'flex' : 'none';
-    if (groupCamDevice) groupCamDevice.style.display = (mode === 'dual' || mode === 'camera') ? 'flex' : 'none';
-    if (rowCamBrightness) rowCamBrightness.style.display = (mode === 'dual' || mode === 'camera') ? 'flex' : 'none';
-    if (rowCamSmoothness) rowCamSmoothness.style.display = (mode === 'dual' || mode === 'camera') ? 'flex' : 'none';
-    if (rowCamNoiseReduction) rowCamNoiseReduction.style.display = (mode === 'dual' || mode === 'camera') ? 'flex' : 'none';
-    if (rowCamFlip) rowCamFlip.style.display = (mode === 'dual' || mode === 'camera') ? 'flex' : 'none';
+    if (groupCamDevice) groupCamDevice.style.display = mode === 'dual' ? 'flex' : 'none';
+    if (rowCamBrightness) rowCamBrightness.style.display = mode === 'dual' ? 'flex' : 'none';
+    if (rowCamSmoothness) rowCamSmoothness.style.display = mode === 'dual' ? 'flex' : 'none';
+    if (rowCamNoiseReduction) rowCamNoiseReduction.style.display = mode === 'dual' ? 'flex' : 'none';
+    if (rowCamFlip) rowCamFlip.style.display = mode === 'dual' ? 'flex' : 'none';
 
     await stopCameraFeeds();
 
     if (mode === 'region') {
       if (previewVideo) previewVideo.style.transform = 'none';
+      if (btnCollapseToIsland) btnCollapseToIsland.style.display = 'flex';
+      isCustomCropIslandMode = true;
+      // Morph main page into Dynamic Island
+      collapseToIsland();
       if (window.electronAPI && window.electronAPI.openRegionSelector) {
         window.electronAPI.openRegionSelector();
       }
-    } else if (mode === 'camera') {
-      currentCamStream = await window.fligoRecorder.startCamera(selectedCamId);
-      if (currentCamStream && previewVideo) {
-        previewVideo.srcObject = currentCamStream;
-        previewVideo.style.transform = (toggleCamFlip && toggleCamFlip.checked) ? 'scaleX(-1)' : 'none';
-        previewVideo.play().catch(() => {});
-        broadcastCameraFilters();
-      }
-    } else if (mode === 'dual') {
-      if (previewVideo) previewVideo.style.transform = 'none';
-      await initPreview('dual');
-      const selectedCamLabel = selectCamDevice.options[selectCamDevice.selectedIndex]?.text || '';
-      if (window.electronAPI && window.electronAPI.openCameraOverlay) {
-        window.electronAPI.openCameraOverlay({
-          shape: window.fligoRecorder.cameraShape,
-          size: window.fligoRecorder.cameraSize,
-          deviceId: selectedCamId,
-          deviceLabel: selectedCamLabel
-        });
-      }
     } else {
-      if (previewVideo) previewVideo.style.transform = 'none';
-      await initPreview('fullscreen');
+      // Switched away from Custom Crop (to fullscreen or dual)
+      // 1. Immediately remove the crop border overlay window from the screen
+      if (window.electronAPI && window.electronAPI.hideCropBorder) {
+        window.electronAPI.hideCropBorder();
+      }
+
+      // 2. Cancel/close region selector window if open
+      if (window.electronAPI && window.electronAPI.cancelRegionSelector) {
+        window.electronAPI.cancelRegionSelector();
+      }
+
+      // 3. Clear recorder's selectedRegion so recording captures full screen
+      if (window.fligoRecorder) {
+        window.fligoRecorder.setRegion(null);
+      }
+
+      // 4. Reset badge displays
+      if (regionCoordsText) {
+        regionCoordsText.textContent = '-- × --';
+      }
+      if (diCropText) {
+        diCropText.textContent = 'Custom Crop';
+      }
+
+      // 5. Hide island collapse button and exit Dynamic Island
+      if (btnCollapseToIsland) btnCollapseToIsland.style.display = 'none';
+      if (isCustomCropIslandMode) {
+        exitDynamicIsland();
+      }
+
+      if (mode === 'dual') {
+        if (previewVideo) previewVideo.style.transform = 'none';
+        await initPreview('dual');
+        const selectedCamLabel = selectCamDevice.options[selectCamDevice.selectedIndex]?.text || '';
+        if (window.electronAPI && window.electronAPI.openCameraOverlay) {
+          window.electronAPI.openCameraOverlay({
+            shape: window.fligoRecorder.cameraShape,
+            size: window.fligoRecorder.cameraSize,
+            deviceId: selectedCamId,
+            deviceLabel: selectedCamLabel
+          });
+        }
+      } else {
+        if (previewVideo) previewVideo.style.transform = 'none';
+        await initPreview('fullscreen');
+      }
     }
   }
 
@@ -941,16 +1075,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.electronAPI.onRegionSelected((region) => {
       if (region) {
         window.fligoRecorder.setRegion(region);
+        const dimStr = `${Math.round(region.width)} × ${Math.round(region.height)}`;
         if (regionCoordsText) {
-          regionCoordsText.textContent = `${Math.round(region.width)} × ${Math.round(region.height)}`;
+          regionCoordsText.textContent = dimStr;
+        }
+        if (diCropText) {
+          diCropText.textContent = dimStr;
         }
       }
     });
   }
 
-  // Live Screen Preview Viewport
+  if (window.electronAPI && window.electronAPI.onRegionCancel) {
+    window.electronAPI.onRegionCancel(() => {
+      // If user cancelled drawing region and has no region, return to fullscreen
+      if (!window.fligoRecorder || !window.fligoRecorder.selectedRegion) {
+        setMode('fullscreen');
+      }
+    });
+  }
+
   async function initPreview(mode) {
-    if (mode === 'camera') return;
     if (!currentScreenStream) {
       currentScreenStream = await window.fligoRecorder.startScreenStream();
     }
@@ -1084,6 +1229,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (btnRecordLabel) btnRecordLabel.textContent = 'STOP RECORDING';
       if (btnVoiceRecordLabel) btnVoiceRecordLabel.textContent = 'STOP VOICE RECORDING';
       if (btnVoiceToggleRecord) btnVoiceToggleRecord.classList.add('is-recording');
+      if (btnDiRec) btnDiRec.classList.add('is-recording');
+      if (diRecLabel) diRecLabel.textContent = 'STOP';
+      if (diStatusDot) {
+        diStatusDot.style.background = '#FF453A';
+        diStatusDot.style.boxShadow = '0 0 10px #FF453A';
+      }
       statusText.textContent = window.fligoRecorder.currentMode === 'voice' ? 'VOICE RECORDING' : 'RECORDING';
       statusDot.style.background = '#FF453A';
       statusDot.style.boxShadow = '0 0 10px #FF453A';
@@ -1091,6 +1242,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (btnRecordLabel) btnRecordLabel.textContent = 'START RECORDING';
       if (btnVoiceRecordLabel) btnVoiceRecordLabel.textContent = 'RECORD VOICE';
       if (btnVoiceToggleRecord) btnVoiceToggleRecord.classList.remove('is-recording');
+      if (btnDiRec) btnDiRec.classList.remove('is-recording');
+      if (diRecLabel) diRecLabel.textContent = 'REC';
+      if (diStatusDot) {
+        diStatusDot.style.background = '#30D158';
+        diStatusDot.style.boxShadow = '0 0 8px #30D158';
+      }
       statusText.textContent = 'CAPTO STUDIO';
       statusDot.style.background = '#30D158';
       statusDot.style.boxShadow = '0 0 8px #30D158';

@@ -63,6 +63,158 @@ html, body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: background 0.25s ease, border 0.25s ease;
+}
+
+/* Dynamic Island Collapsed Mini Bar for Custom Crop Mode */
+.app-window.island-collapsed {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  justify-content: center;
+}
+
+.dynamic-island-bar {
+  width: 100%;
+  height: 52px;
+  background: #0d1118;
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  border-radius: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  gap: 10px;
+  -webkit-app-region: drag;
+  cursor: grab;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75), 0 0 1px rgba(255, 255, 255, 0.35);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.dynamic-island-bar:hover {
+  border-color: rgba(10, 132, 255, 0.6);
+  box-shadow: 0 16px 40px rgba(10, 132, 255, 0.25), 0 0 12px rgba(10, 132, 255, 0.3);
+}
+
+.dynamic-island-bar:active {
+  cursor: grabbing;
+}
+
+.di-brand-group {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  -webkit-app-region: drag;
+}
+
+.di-brand-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: #fff;
+}
+
+.di-crop-info {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ios-orange, #FF9F0A);
+  -webkit-app-region: no-drag;
+}
+
+.di-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  -webkit-app-region: no-drag;
+}
+
+.di-action-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.di-action-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.04);
+}
+
+.di-rec-btn {
+  background: rgba(255, 69, 58, 0.2);
+  border-color: #FF453A;
+  color: #FF453A;
+}
+
+.di-rec-btn:hover {
+  background: rgba(255, 69, 58, 0.35);
+}
+
+.di-rec-btn.is-recording {
+  background: #FF453A;
+  color: #FFF;
+}
+
+.di-rec-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #FF453A;
+  box-shadow: 0 0 6px #FF453A;
+}
+
+.di-hover-hint {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  -webkit-app-region: no-drag;
+}
+
+.di-hover-hint:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(2px);
+  color: #fff;
+}
+
+.island-collapse-btn {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  padding: 4px 10px !important;
+  background: rgba(255, 159, 10, 0.15) !important;
+  border-color: rgba(255, 159, 10, 0.4) !important;
+  color: #FF9F0A !important;
+  -webkit-app-region: no-drag;
+}
+
+.island-collapse-btn:hover {
+  background: rgba(255, 159, 10, 0.3) !important;
+  transform: translateY(-1px);
 }
 
 /* Titlebar */
@@ -194,7 +346,7 @@ html, body {
 /* 1. iOS Camera Mode Selector Cards */
 .mode-selector-carousel {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
 

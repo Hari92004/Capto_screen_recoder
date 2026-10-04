@@ -64,36 +64,30 @@ class FligoAudioEngine {
     if (this.micStream && this.micStream.getAudioTracks().length > 0) {
       this.micSource = this.audioCtx.createMediaStreamSource(this.micStream);
 
-      // Highpass filter (cuts desk rumbles, laptop chassis vibrations < 80Hz)
+      // Gentle sub-bass cut (cuts desk rumbles & AC hum < 40Hz without touching vocal warmth)
       this.highpassFilter = this.audioCtx.createBiquadFilter();
       this.highpassFilter.type = 'highpass';
-      this.highpassFilter.frequency.value = 80;
+      this.highpassFilter.frequency.value = 40;
       this.highpassFilter.Q.value = 0.707;
 
-      // 50Hz / 60Hz AC Electrical & Laptop Fan Hum Notch Filter
-      this.notchFilter = this.audioCtx.createBiquadFilter();
-      this.notchFilter.type = 'notch';
-      this.notchFilter.frequency.value = 55;
-      this.notchFilter.Q.value = 3.5;
-
-      // Vocal Clarity Peaking Filter (+3.0dB at 2.8kHz for broadcast voice presence)
+      // Vocal Clarity Peaking Filter (+1.8dB at 3.0kHz for clear speech articulation)
       this.speechEnhancerFilter = this.audioCtx.createBiquadFilter();
       this.speechEnhancerFilter.type = 'peaking';
-      this.speechEnhancerFilter.frequency.value = 2800;
-      this.speechEnhancerFilter.gain.value = 3.0;
-      this.speechEnhancerFilter.Q.value = 1.0;
+      this.speechEnhancerFilter.frequency.value = 3000;
+      this.speechEnhancerFilter.gain.value = 1.8;
+      this.speechEnhancerFilter.Q.value = 0.9;
 
-      // Broadcast Studio Dynamics Compressor (levels quiet vs loud speech naturally)
+      // Broadcast Studio Dynamics Compressor (smoothly levels speech dynamics without pumping)
       this.compressorNode = this.audioCtx.createDynamicsCompressor();
-      this.compressorNode.threshold.value = -24;
-      this.compressorNode.knee.value = 12;
-      this.compressorNode.ratio.value = 4.0;
-      this.compressorNode.attack.value = 0.003;
-      this.compressorNode.release.value = 0.12;
+      this.compressorNode.threshold.value = -18;
+      this.compressorNode.knee.value = 10;
+      this.compressorNode.ratio.value = 2.5;
+      this.compressorNode.attack.value = 0.005;
+      this.compressorNode.release.value = 0.10;
 
-      // Studio Dynamic Noise Gate Gain Node
+      // Studio Output Gain Node (boosts mic volume by +25% so voice is loud & clear)
       this.gateGainNode = this.audioCtx.createGain();
-      this.gateGainNode.gain.value = this.isMuted ? 0.0 : 1.0;
+      this.gateGainNode.gain.value = this.isMuted ? 0.0 : 1.25;
 
       // Analysers
       this.cleanAnalyserNode = this.audioCtx.createAnalyser();
@@ -103,10 +97,9 @@ class FligoAudioEngine {
       this.rawAnalyserNode = this.cleanAnalyserNode;
 
       // Connect DSP Chain:
-      // Mic -> Highpass -> Notch -> Speech Enhancer -> Compressor -> Gate -> Analyser -> Mixed Output
+      // Mic -> Highpass -> Speech Enhancer -> Compressor -> Output Gain -> Analyser -> Mixed Output
       this.micSource.connect(this.highpassFilter);
-      this.highpassFilter.connect(this.notchFilter);
-      this.notchFilter.connect(this.speechEnhancerFilter);
+      this.highpassFilter.connect(this.speechEnhancerFilter);
       this.speechEnhancerFilter.connect(this.compressorNode);
       this.compressorNode.connect(this.gateGainNode);
       this.gateGainNode.connect(this.cleanAnalyserNode);
@@ -138,7 +131,7 @@ class FligoAudioEngine {
     if (this.gateGainNode && this.audioCtx && this.audioCtx.state !== 'closed') {
       const now = this.audioCtx.currentTime;
       this.gateGainNode.gain.cancelScheduledValues(now);
-      this.gateGainNode.gain.setValueAtTime(this.isMuted ? 0.0 : 1.0, now);
+      this.gateGainNode.gain.setValueAtTime(this.isMuted ? 0.0 : 1.25, now);
     }
   }
 
@@ -146,10 +139,10 @@ class FligoAudioEngine {
     this.isVoiceCompressorEnabled = !!enabled;
     if (this.compressorNode && this.speechEnhancerFilter && this.audioCtx) {
       if (this.isVoiceCompressorEnabled) {
-        this.compressorNode.threshold.value = -24;
-        this.compressorNode.ratio.value = 4.0;
-        this.speechEnhancerFilter.gain.value = 3.0;
-        this.highpassFilter.frequency.value = 80;
+        this.compressorNode.threshold.value = -18;
+        this.compressorNode.ratio.value = 2.5;
+        this.speechEnhancerFilter.gain.value = 1.8;
+        this.highpassFilter.frequency.value = 40;
       } else {
         this.compressorNode.threshold.value = 0;
         this.compressorNode.ratio.value = 1.0;
@@ -184,25 +177,11 @@ class FligoAudioEngine {
         sumSquares += dataArray[i] * dataArray[i];
       }
       const rms = Math.sqrt(sumSquares / dataArray.length);
+      this.lastVad = rms > 0.008 ? 1.0 : 0.0;
 
-      if (this.isVoiceCompressorEnabled) {
-        const isSpeaking = rms > this.noiseGateThreshold;
-
-        if (isSpeaking) {
-          this.targetGateGain = 1.0;
-          this.currentGateGain += (this.targetGateGain - this.currentGateGain) * 0.4;
-        } else {
-          // Dynamic studio noise gate attenuation (-36dB)
-          this.targetGateGain = 0.015;
-          this.currentGateGain += (this.targetGateGain - this.currentGateGain) * 0.10;
-        }
-
-        const now = this.audioCtx.currentTime;
-        this.gateGainNode.gain.cancelScheduledValues(now);
-        this.gateGainNode.gain.setValueAtTime(Math.max(0.015, Math.min(1.0, this.currentGateGain)), now);
-      } else {
-        this.gateGainNode.gain.setValueAtTime(1.0, this.audioCtx.currentTime);
-      }
+      // Maintain full natural gain (1.25) so speech is never chopped or muted in background
+      const targetGain = this.isMuted ? 0.0 : 1.25;
+      this.gateGainNode.gain.setValueAtTime(targetGain, this.audioCtx.currentTime);
 
       this.rafId = requestAnimationFrame(processGate);
     };
