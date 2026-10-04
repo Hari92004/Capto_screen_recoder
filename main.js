@@ -30,6 +30,7 @@ let regionSelectorWindow = null;
 let cropBorderWindow = null;
 let cameraOverlayWindow = null;
 let toolbarWindow = null;
+let playerWindow = null;
 
 // App Icon Path (Multi-resolution ICO for Windows, PNG for others)
 const icoPath = path.join(__dirname, 'src', 'assets', 'icon.ico');
@@ -768,6 +769,84 @@ ipcMain.handle('clear-all-recordings', async () => {
   } catch (err) {
     console.error('Error clearing recordings:', err);
     return { success: false, error: err.message };
+  }
+});
+
+let currentPlayerData = null;
+
+// Dedicated Large Media Player Popup Window for Library
+function openMediaPlayerWindow(mediaData) {
+  currentPlayerData = mediaData;
+  if (playerWindow && !playerWindow.isDestroyed()) {
+    playerWindow.show();
+    playerWindow.focus();
+    playerWindow.webContents.send('load-media', mediaData);
+    return;
+  }
+
+  playerWindow = new BrowserWindow({
+    title: 'Capto Media Player',
+    width: 980,
+    height: 640,
+    minWidth: 580,
+    minHeight: 420,
+    frame: false,
+    transparent: true,
+    backgroundColor: '#00000000',
+    hasShadow: true,
+    center: true,
+    resizable: true,
+    icon: appIcon || appIconPath,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      webSecurity: false
+    }
+  });
+
+  playerWindow.loadFile(path.join(__dirname, 'src', 'overlays', 'player.html'));
+
+  playerWindow.webContents.once('did-finish-load', () => {
+    if (playerWindow && !playerWindow.isDestroyed() && currentPlayerData) {
+      playerWindow.webContents.send('load-media', currentPlayerData);
+    }
+  });
+
+  playerWindow.on('closed', () => {
+    playerWindow = null;
+  });
+}
+
+ipcMain.on('open-media-player', (event, mediaData) => {
+  openMediaPlayerWindow(mediaData);
+});
+
+ipcMain.on('player-ready', () => {
+  if (currentPlayerData && playerWindow && !playerWindow.isDestroyed()) {
+    playerWindow.webContents.send('load-media', currentPlayerData);
+  }
+});
+
+ipcMain.on('player-minimize', () => {
+  if (playerWindow && !playerWindow.isDestroyed()) {
+    playerWindow.minimize();
+  }
+});
+
+ipcMain.on('player-maximize', () => {
+  if (playerWindow && !playerWindow.isDestroyed()) {
+    if (playerWindow.isMaximized()) {
+      playerWindow.unmaximize();
+    } else {
+      playerWindow.maximize();
+    }
+  }
+});
+
+ipcMain.on('player-close', () => {
+  if (playerWindow && !playerWindow.isDestroyed()) {
+    playerWindow.close();
   }
 });
 

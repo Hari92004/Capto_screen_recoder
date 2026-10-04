@@ -63,6 +63,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteRecording: (filePath) => ipcRenderer.invoke('delete-recording', filePath),
   clearAllRecordings: () => ipcRenderer.invoke('clear-all-recordings'),
   openRecordingsFolder: () => ipcRenderer.send('open-recordings-folder'),
-  revealFile: (filePath) => ipcRenderer.send('reveal-file', filePath)
+  revealFile: (filePath) => ipcRenderer.send('reveal-file', filePath),
+
+  // Media Player Popup Window
+  openMediaPlayer: (mediaData) => ipcRenderer.send('open-media-player', mediaData),
+  onLoadMedia: (callback) => ipcRenderer.on('load-media', (event, data) => callback(data)),
+  playerReady: () => ipcRenderer.send('player-ready'),
+  playerMinimize: () => ipcRenderer.send('player-minimize'),
+  playerMaximize: () => ipcRenderer.send('player-maximize'),
+  playerClose: () => ipcRenderer.send('player-close')
 });
 

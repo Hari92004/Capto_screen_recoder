@@ -159,11 +159,29 @@ class CaptoGallery {
 
     playBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      toggleAudioPlay();
+      this.pauseAllMedia();
+      if (window.electronAPI && window.electronAPI.openMediaPlayer) {
+        window.electronAPI.openMediaPlayer({
+          filePath: rec.fullPath,
+          filename: rec.filename,
+          type: 'audio'
+        });
+      } else {
+        toggleAudioPlay();
+      }
     });
 
     cardBody.addEventListener('click', () => {
-      toggleAudioPlay();
+      this.pauseAllMedia();
+      if (window.electronAPI && window.electronAPI.openMediaPlayer) {
+        window.electronAPI.openMediaPlayer({
+          filePath: rec.fullPath,
+          filename: rec.filename,
+          type: 'audio'
+        });
+      } else {
+        toggleAudioPlay();
+      }
     });
 
     audio.addEventListener('ended', () => {
@@ -215,7 +233,13 @@ class CaptoGallery {
 
     const thumb = card.querySelector('.recording-thumb');
     thumb.addEventListener('click', () => {
-      if (window.electronAPI && window.electronAPI.revealFile) {
+      if (window.electronAPI && window.electronAPI.openMediaPlayer) {
+        window.electronAPI.openMediaPlayer({
+          filePath: rec.fullPath,
+          filename: rec.filename,
+          type: 'photo'
+        });
+      } else if (window.electronAPI && window.electronAPI.revealFile) {
         window.electronAPI.revealFile(rec.fullPath);
       }
     });
@@ -285,11 +309,20 @@ class CaptoGallery {
     });
 
     thumb.addEventListener('click', () => {
-      if (video.paused) {
-        this.pauseAllMedia(video);
-        video.play().catch(e => console.warn('Video play error:', e));
+      this.pauseAllMedia();
+      if (window.electronAPI && window.electronAPI.openMediaPlayer) {
+        window.electronAPI.openMediaPlayer({
+          filePath: rec.fullPath,
+          filename: rec.filename,
+          type: 'video'
+        });
       } else {
-        video.pause();
+        if (video.paused) {
+          this.pauseAllMedia(video);
+          video.play().catch(e => console.warn('Video play error:', e));
+        } else {
+          video.pause();
+        }
       }
     });
 
