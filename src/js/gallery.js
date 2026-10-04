@@ -116,7 +116,7 @@ class CaptoGallery {
           <button class="audio-play-btn" title="Play / Pause">▶</button>
           <div class="audio-info-col">
             <span class="rec-title-text" title="${rec.filename}">${rec.filename}</span>
-            <span class="audio-tag-pill">🎙️ Voice Note</span>
+            <span class="audio-tag-pill"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: middle;"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line></svg>Voice Note</span>
           </div>
         </div>
         <div class="audio-wave-anim">
@@ -356,7 +356,7 @@ class CaptoGallery {
       if (videos.length === 0) {
         this.galleryGrid.innerHTML = `
           <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-tertiary);">
-            <div style="font-size: 38px; margin-bottom: 10px;">🎬</div>
+            <div style="margin-bottom: 12px;"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg></div>
             <div style="font-size: 15px; font-weight: 700; color: #FFFFFF;">No Video Recordings Yet</div>
             <div style="font-size: 11px; margin-top: 6px; color: rgba(255, 255, 255, 0.6); line-height: 1.4;">
               Screen and webcam recordings saved to <i>Screen Recordings</i> will appear here.
@@ -382,7 +382,7 @@ class CaptoGallery {
       if (voiceNotes.length === 0) {
         this.galleryGrid.innerHTML = `
           <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-tertiary);">
-            <div style="font-size: 38px; margin-bottom: 10px;">🎙️</div>
+            <div style="margin-bottom: 12px;"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line></svg></div>
             <div style="font-size: 15px; font-weight: 700; color: #FFFFFF;">No Voice Recordings Yet</div>
             <div style="font-size: 11px; margin-top: 6px; color: rgba(255, 255, 255, 0.6); line-height: 1.4;">
               Studio voice clips and AI ANC audio recordings will appear here.
@@ -402,7 +402,7 @@ class CaptoGallery {
       if (recordings.length === 0) {
         this.galleryGrid.innerHTML = `
           <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-tertiary);">
-            <div style="font-size: 38px; margin-bottom: 10px;">📁</div>
+            <div style="margin-bottom: 12px;"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg></div>
             <div style="font-size: 15px; font-weight: 700; color: #FFFFFF;">No Media Recordings Yet</div>
             <div style="font-size: 11px; margin-top: 6px; color: rgba(255, 255, 255, 0.6); line-height: 1.4;">
               All screen captures, webcam videos, and voice recordings will appear here.
@@ -415,7 +415,7 @@ class CaptoGallery {
       if (videos.length > 0) {
         const vHeader = document.createElement('div');
         vHeader.className = 'lib-section-title';
-        vHeader.innerHTML = `<span>🎬 Videos & Screen Captures</span> <span class="switch-badge">${videos.length}</span>`;
+        vHeader.innerHTML = `<span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: middle;"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>Videos & Screen Captures</span> <span class="switch-badge">${videos.length}</span>`;
         this.galleryGrid.appendChild(vHeader);
         videos.forEach(v => this.galleryGrid.appendChild(this.createVideoCard(v)));
       }
@@ -423,7 +423,7 @@ class CaptoGallery {
       if (voiceNotes.length > 0) {
         const aHeader = document.createElement('div');
         aHeader.className = 'lib-section-title';
-        aHeader.innerHTML = `<span>🎙️ Voice Recordings & Audio</span> <span class="switch-badge" style="background: rgba(94, 92, 230, 0.35); color: #FFF;">${voiceNotes.length}</span>`;
+        aHeader.innerHTML = `<span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; vertical-align: middle;"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line></svg>Voice Recordings & Audio</span> <span class="switch-badge" style="background: rgba(94, 92, 230, 0.35); color: #FFF;">${voiceNotes.length}</span>`;
         this.galleryGrid.appendChild(aHeader);
         voiceNotes.forEach(v => this.galleryGrid.appendChild(this.createVoiceCard(v)));
       }

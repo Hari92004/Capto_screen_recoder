@@ -20,18 +20,20 @@
       </div>
 
       <div class="di-crop-info" id="di-crop-info" title="Selected Crop Recording Area">
-        <span class="di-crop-icon">📐</span>
+        <span class="di-crop-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2v14a2 2 0 0 0 2 2h14"></path><path d="M18 22V8a2 2 0 0 0-2-2H2"></path></svg></span>
         <span class="di-crop-text" id="di-crop-text">1920 × 1080</span>
       </div>
 
       <div class="di-actions">
-        <button class="di-action-btn" id="btn-di-reselect" title="Re-select Area">✂️ Crop</button>
+        <button class="di-action-btn" id="btn-di-reselect" title="Re-select Area">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 3px; vertical-align: middle;"><path d="M6 2v14a2 2 0 0 0 2 2h14"></path><path d="M18 22V8a2 2 0 0 0-2-2H2"></path></svg>Crop
+        </button>
         <button class="di-action-btn di-rec-btn" id="btn-di-rec" title="Start / Stop Recording">
           <span class="di-rec-dot" id="di-rec-dot"></span>
           <span id="di-rec-label">REC</span>
         </button>
         <div class="di-hover-hint" id="di-hover-hint" title="Click to expand full page">
-          <span>▼</span>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 9 12 15 18 9"></polygon></svg>
         </div>
       </div>
     </div>
@@ -85,17 +87,29 @@
         <!-- 1. Mode Selector -->
         <div class="mode-selector-carousel">
           <div class="mode-item active" data-mode="fullscreen" id="mode-fullscreen">
-            <span class="mode-emoji">🖥️</span>
+            <svg class="mode-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
             <span class="mode-text">Full Screen</span>
           </div>
 
           <div class="mode-item" data-mode="region" id="mode-region">
-            <span class="mode-emoji">📐</span>
+            <svg class="mode-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 2v14a2 2 0 0 0 2 2h14"></path>
+              <path d="M18 22V8a2 2 0 0 0-2-2H2"></path>
+            </svg>
             <span class="mode-text">Custom Crop</span>
           </div>
 
           <div class="mode-item" data-mode="dual" id="mode-dual">
-            <span class="mode-emoji">✨</span>
+            <svg class="mode-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+              <circle cx="16" cy="8" r="2.5" fill="currentColor"></circle>
+            </svg>
             <span class="mode-text">Screen + Face</span>
           </div>
         </div>
@@ -143,11 +157,22 @@
           
           <!-- Mic Mute / Unmute Button -->
           <button class="glass-action-btn" id="btn-toggle-mute" title="Mute / Unmute Microphone">
-            <span id="mute-btn-icon">🎙️</span>
+            <span id="mute-btn-icon" style="display:inline-flex;align-items:center;justify-content:center;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+              </svg>
+            </span>
           </button>
 
           <!-- Snapshot Button -->
-          <button class="glass-action-btn" id="btn-screenshot" title="Take Screenshot">📸</button>
+          <button class="glass-action-btn" id="btn-screenshot" title="Take Screenshot">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+              <circle cx="12" cy="13" r="4"></circle>
+            </svg>
+          </button>
         </div>
 
         <!-- 4. Device Selectors & Quick Settings -->
@@ -157,7 +182,7 @@
           <div class="ios-row-column">
             <div class="ios-row" style="margin-bottom: 4px;">
               <div class="row-label">
-                <span>🎙️</span> Microphone Device
+                <span class="row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line></svg></span> Microphone Device
               </div>
               <span id="mic-status-label" class="mic-status-badge">Mic Ready</span>
             </div>
@@ -190,7 +215,7 @@
           <!-- Camera Device Selector -->
           <div class="ios-row-column" id="group-cam-device">
             <div class="row-label" style="margin-bottom: 4px;">
-              <span>📷</span> Camera Device
+              <span class="row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg></span> Camera Device
             </div>
             <select class="ios-select" id="select-cam-device">
               <option value="">Default Camera</option>
@@ -200,7 +225,7 @@
           <!-- Webcam Only Brightness Controller -->
           <div class="ios-row-column" id="row-cam-brightness">
             <div class="ios-row" style="margin-bottom: 6px;">
-              <div class="row-label"><span>💡</span> Face Camera Brightness</div>
+              <div class="row-label"><span class="row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg></span> Face Camera Brightness</div>
               <span id="brightness-val-text" style="font-size: 11px; font-weight: 700; color: var(--ios-orange);">100%</span>
             </div>
             <input type="range" class="ios-slider" id="slider-brightness" min="50" max="180" value="100">
@@ -209,7 +234,7 @@
           <!-- Live Face Skin Smoothness (Beauty Glow) -->
           <div class="ios-row-column" id="row-cam-smoothness">
             <div class="ios-row" style="margin-bottom: 6px;">
-              <div class="row-label"><span>✨</span> Live Face Smoothness</div>
+              <div class="row-label"><span class="row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4m0 12v4M2 12h4m12 0h4m-3.17-6.83l-2.83 2.83m-8 8l-2.83 2.83m0-13.66l2.83 2.83m8 8l2.83 2.83"></path></svg></span> Live Face Smoothness</div>
               <span id="smoothness-val-text" style="font-size: 11px; font-weight: 700; color: #AF52DE;">0%</span>
             </div>
             <input type="range" class="ios-slider" id="slider-smoothness" min="0" max="100" value="0">
@@ -218,7 +243,7 @@
           <!-- Live Webcam Video Noise Reduction -->
           <div class="ios-row-column" id="row-cam-noise-reduction">
             <div class="ios-row" style="margin-bottom: 6px;">
-              <div class="row-label"><span>🧹</span> Video Noise Reduction</div>
+              <div class="row-label"><span class="row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></span> Video Noise Reduction</div>
               <span id="noise-reduction-val-text" style="font-size: 11px; font-weight: 700; color: #30D158;">0%</span>
             </div>
             <input type="range" class="ios-slider" id="slider-noise-reduction" min="0" max="100" value="0">
@@ -227,7 +252,7 @@
           <!-- Flip / Mirror Camera Video Toggle -->
           <div class="ios-row" id="row-cam-flip">
             <div>
-              <div class="row-label"><span>🪞</span> Flip Camera Video (Mirror)</div>
+              <div class="row-label"><span class="row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg></span> Flip Camera Video (Mirror)</div>
               <div class="row-sub">Horizontally flip webcam video for natural selfie view</div>
             </div>
             <label class="ios-switch">
@@ -239,7 +264,7 @@
           <!-- Studio AI Voice Compressor & Vocal Enhancer -->
           <div class="ios-row">
             <div>
-              <div class="row-label"><span>🎙️</span> AI Voice Compressor & Enhancer</div>
+              <div class="row-label"><span class="row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></span> AI Voice Compressor & Enhancer</div>
               <div class="row-sub">Broadcast-grade vocal clarity & dynamic volume leveling</div>
             </div>
             <label class="ios-switch">
@@ -251,7 +276,7 @@
           <!-- Auto Silence Removal -->
           <div class="ios-row">
             <div>
-              <div class="row-label"><span>✂️</span> Auto Silence Removal</div>
+              <div class="row-label"><span class="row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg></span> Auto Silence Removal</div>
               <div class="row-sub">Cuts speech pauses and dead air automatically</div>
             </div>
             <label class="ios-switch">
@@ -263,7 +288,7 @@
           <!-- System Audio -->
           <div class="ios-row">
             <div>
-              <div class="row-label"><span>🔊</span> System Audio (Internal)</div>
+              <div class="row-label"><span class="row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></span> System Audio (Internal)</div>
               <div class="row-sub">Record PC sound & apps in sync</div>
             </div>
             <label class="ios-switch">
@@ -275,7 +300,7 @@
           <!-- Dual Mode Camera Shape Switcher -->
           <div class="ios-row" id="row-cam-shape" style="display: flex;">
             <div>
-              <div class="row-label"><span>🪞</span> Floating Cam Shape</div>
+              <div class="row-label"><span class="row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle></svg></span> Floating Cam Shape</div>
               <div class="row-sub">Movable overlay frame shape</div>
             </div>
             <div class="shape-segment-group">
@@ -337,17 +362,17 @@
           <!-- Live Studio Analytics Badges -->
           <div class="voice-metrics-strip">
             <div class="metric-chip">
-              <span class="chip-icon">🔊</span>
+              <span class="chip-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg></span>
               <span class="chip-val" id="voice-metric-db">-48 dB</span>
               <span class="chip-lbl">Volume</span>
             </div>
             <div class="metric-chip">
-              <span class="chip-icon">🎙️</span>
+              <span class="chip-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line></svg></span>
               <span class="chip-val" id="voice-metric-vad">Studio HD</span>
               <span class="chip-lbl">Vocal Clarity</span>
             </div>
             <div class="metric-chip">
-              <span class="chip-icon">🧹</span>
+              <span class="chip-icon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></span>
               <span class="chip-val" id="voice-metric-noise">Auto-Gated</span>
               <span class="chip-lbl">Dynamics</span>
             </div>
@@ -385,7 +410,13 @@
           
           <!-- Mic Mute / Unmute Button -->
           <button class="glass-action-btn" id="btn-voice-toggle-mute" title="Mute / Unmute Voice Mic">
-            <span id="voice-mute-btn-icon">🎙️</span>
+            <span id="voice-mute-btn-icon" style="display:inline-flex;align-items:center;justify-content:center;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+              </svg>
+            </span>
           </button>
         </div>
 
@@ -395,7 +426,7 @@
           <div class="ios-row-column">
             <div class="ios-row" style="margin-bottom: 4px;">
               <div class="row-label">
-                <span>🎙️</span> Voice Microphone
+                <span class="row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line></svg></span> Voice Microphone
               </div>
               <span id="voice-mic-status-label" class="mic-status-badge">Mic Ready</span>
             </div>
@@ -407,7 +438,7 @@
           <!-- Studio Voice Compressor & Vocal Enhancer -->
           <div class="ios-row">
             <div>
-              <div class="row-label"><span>🎙️</span> Studio Voice Compressor</div>
+              <div class="row-label"><span class="row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></span> Studio Voice Compressor</div>
               <div class="row-sub">Broadcast vocal warmth, clarity boost & dynamic auto-gate</div>
             </div>
             <label class="ios-switch">
@@ -419,7 +450,7 @@
           <!-- Auto Silence Removal -->
           <div class="ios-row">
             <div>
-              <div class="row-label"><span>✂️</span> Auto Silence Removal</div>
+              <div class="row-label"><span class="row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg></span> Auto Silence Removal</div>
               <div class="row-sub">Cuts speech pauses and dead air automatically</div>
             </div>
             <label class="ios-switch">
@@ -439,20 +470,24 @@
             <span class="library-folder-hint" id="lib-folder-hint">Screen Recordings</span>
           </div>
           <div style="display: flex; gap: 6px; align-items: center;">
-            <button class="glass-action-btn danger-hover-btn" id="btn-clear-library" title="Remove all recordings from library">🗑️ Clear All</button>
-            <button class="glass-action-btn" id="btn-open-folder" title="Open Screen Recordings in File Explorer">📂 Open Folder</button>
+            <button class="glass-action-btn danger-hover-btn" id="btn-clear-library" title="Remove all recordings from library">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: middle;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>Clear All
+            </button>
+            <button class="glass-action-btn" id="btn-open-folder" title="Open Screen Recordings in File Explorer">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: middle;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>Open Folder
+            </button>
           </div>
         </div>
 
         <!-- 2 Sections: Videos | Voice -->
         <div class="library-section-switch">
           <button class="lib-switch-btn active" id="filter-videos" data-filter="video">
-            <span class="switch-icon">🎬</span>
+            <span class="switch-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg></span>
             <span class="switch-text">Videos</span>
             <span class="switch-badge" id="video-count-badge">0</span>
           </button>
           <button class="lib-switch-btn" id="filter-voice" data-filter="voice">
-            <span class="switch-icon">🎙️</span>
+            <span class="switch-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line></svg></span>
             <span class="switch-text">Voice</span>
             <span class="switch-badge" id="voice-count-badge">0</span>
           </button>

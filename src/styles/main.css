@@ -374,15 +374,53 @@ html, body {
   box-shadow: 0 4px 18px rgba(10, 132, 255, 0.3);
 }
 
-.mode-emoji {
-  font-size: 22px;
-  margin-bottom: 4px;
+.mode-svg {
+  width: 22px;
+  height: 22px;
+  margin-bottom: 5px;
+  stroke: rgba(255, 255, 255, 0.75);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mode-item:hover .mode-svg {
+  stroke: #ffffff;
+  transform: scale(1.08);
+}
+
+.mode-item.active .mode-svg {
+  stroke: var(--ios-blue);
+  filter: drop-shadow(0 0 8px rgba(10, 132, 255, 0.7));
 }
 
 .mode-text {
   font-size: 11px;
   font-weight: 700;
   color: var(--text-primary);
+}
+
+.row-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  color: var(--ios-blue);
+  vertical-align: middle;
+}
+
+.row-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+}
+
+.chip-icon svg,
+.switch-icon svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  vertical-align: middle;
 }
 
 /* 2. Live Preview Screen */

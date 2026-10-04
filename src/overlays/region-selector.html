@@ -177,7 +177,7 @@
 <body>
 
   <div class="instruction-bar" id="instruction-bar">
-    <span id="instruction-text">📐 Click & Drag to select recording area</span>
+    <span id="instruction-text">Click & Drag to select recording area</span>
     <span class="key-badge">ESC: Cancel</span>
     <span class="key-badge">ENTER: Confirm</span>
   </div>
@@ -198,7 +198,7 @@
     <!-- Action Toolbar attached to box -->
     <div id="box-action-bar">
       <button class="action-btn btn-confirm" id="btn-confirm-crop">✓ Confirm Area</button>
-      <button class="action-btn btn-redraw" id="btn-redraw-crop">✂ Redraw</button>
+      <button class="action-btn btn-redraw" id="btn-redraw-crop">Redraw</button>
       <button class="action-btn btn-cancel" id="btn-cancel-crop">✕ Cancel</button>
     </div>
   </div>
@@ -271,13 +271,13 @@
     function showHandlesAndActions() {
       handles.forEach(h => h.style.display = 'block');
       actionBar.style.display = 'flex';
-      instructionText.textContent = '✨ Drag handles to resize • Drag inside to move • Enter to confirm';
+      instructionText.textContent = 'Drag handles to resize • Drag inside to move • Enter to confirm';
     }
 
     function hideHandlesAndActions() {
       handles.forEach(h => h.style.display = 'none');
       actionBar.style.display = 'none';
-      instructionText.textContent = '📐 Click & Drag to select recording area';
+      instructionText.textContent = 'Click & Drag to select recording area';
     }
 
     function confirmSelection() {

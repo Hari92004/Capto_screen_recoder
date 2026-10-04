@@ -318,9 +318,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       window.fligoAudioEngine.setMute(isMicMuted);
     }
 
-    const icon = isMicMuted ? '🔇' : '🎙️';
-    if (muteBtnIcon) muteBtnIcon.textContent = icon;
-    if (voiceMuteBtnIcon) voiceMuteBtnIcon.textContent = icon;
+    const micSvgOn = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line></svg>`;
+    const micSvgOff = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path><line x1="12" y1="19" x2="12" y2="23"></line></svg>`;
+    const micSvg = isMicMuted ? micSvgOff : micSvgOn;
+    if (muteBtnIcon) muteBtnIcon.innerHTML = micSvg;
+    if (voiceMuteBtnIcon) voiceMuteBtnIcon.innerHTML = micSvg;
 
     if (btnToggleMute) {
       btnToggleMute.style.background = isMicMuted ? 'rgba(255, 69, 58, 0.35)' : '';
@@ -548,9 +550,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (metrics.isSpeaking) {
               voiceLiveDot.classList.add('active-speaking');
               voiceLiveText.classList.add('active-speaking');
-              voiceLiveText.textContent = '🎙️ MIC ACTIVE • SOUND DETECTED';
+              voiceLiveText.textContent = 'MIC ACTIVE • SOUND DETECTED';
             } else {
-              voiceLiveText.textContent = '🎙️ MIC READY • LISTENING...';
+              voiceLiveText.textContent = 'MIC READY • LISTENING...';
             }
           }
         }
@@ -675,7 +677,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         ctx.font = '600 12px sans-serif';
         ctx.fillStyle = '#FF9F0A';
         ctx.textAlign = 'center';
-        ctx.fillText('🎙️ MICROPHONE MUTED', panelX + panelW / 2, centerY + 4);
+        ctx.fillText('MICROPHONE MUTED', panelX + panelW / 2, centerY + 4);
         ctx.textAlign = 'left';
       } else {
         const points = [];

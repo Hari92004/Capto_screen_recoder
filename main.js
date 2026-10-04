@@ -5,6 +5,12 @@ const { execFile } = require('child_process');
 let ffmpegPath = null;
 try {
   ffmpegPath = require('ffmpeg-static');
+  if (ffmpegPath && typeof ffmpegPath === 'string' && ffmpegPath.includes('app.asar')) {
+    const unpacked = ffmpegPath.replace('app.asar', 'app.asar.unpacked');
+    if (fs.existsSync(unpacked)) {
+      ffmpegPath = unpacked;
+    }
+  }
 } catch (e) {
   console.warn('[Capto] ffmpeg-static not available:', e);
 }
@@ -631,7 +637,9 @@ ipcMain.handle('save-recording', async (event, { buffer, filename }) => {
             [
               '-y',
               '-i', tempWebm,
+              '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
               '-c:v', 'libx264',
+              '-pix_fmt', 'yuv420p',
               '-preset', 'ultrafast',
               '-crf', '20',
               '-c:a', 'aac',
@@ -641,10 +649,10 @@ ipcMain.handle('save-recording', async (event, { buffer, filename }) => {
               filePath
             ],
             { timeout: 180000 },
-            (err) => {
+            (err, stdout, stderr) => {
               try { if (fs.existsSync(tempWebm)) fs.unlinkSync(tempWebm); } catch (e) {}
               if (err) {
-                console.warn('[Capto] FFmpeg conversion error, falling back to direct write:', err);
+                console.warn('[Capto] FFmpeg conversion error, falling back to direct write:', err, stderr);
                 resolve(false);
               } else {
                 resolve(true);

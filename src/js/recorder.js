@@ -232,8 +232,10 @@ class CaptoRecorder {
         const nativeW = settings.width || window.screen.width * (window.devicePixelRatio || 1);
         const nativeH = settings.height || window.screen.height * (window.devicePixelRatio || 1);
 
-        const outWidth = Math.max(2, Math.round(this.selectedRegion.width));
-        const outHeight = Math.max(2, Math.round(this.selectedRegion.height));
+        let outWidth = Math.max(2, Math.round(this.selectedRegion.width));
+        let outHeight = Math.max(2, Math.round(this.selectedRegion.height));
+        if (outWidth % 2 !== 0) outWidth -= 1;
+        if (outHeight % 2 !== 0) outHeight -= 1;
         this.canvas.width = outWidth;
         this.canvas.height = outHeight;
 
@@ -537,8 +539,10 @@ class CaptoRecorder {
     const nativeW = settings.width || 1920;
     const nativeH = settings.height || 1080;
 
-    const outWidth = isRegion ? this.selectedRegion.width : nativeW;
-    const outHeight = isRegion ? this.selectedRegion.height : nativeH;
+    let outWidth = isRegion ? Math.max(2, Math.round(this.selectedRegion.width)) : nativeW;
+    let outHeight = isRegion ? Math.max(2, Math.round(this.selectedRegion.height)) : nativeH;
+    if (outWidth % 2 !== 0) outWidth -= 1;
+    if (outHeight % 2 !== 0) outHeight -= 1;
 
     this.canvas.width = outWidth;
     this.canvas.height = outHeight;
