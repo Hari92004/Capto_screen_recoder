@@ -743,34 +743,45 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  let knownAudioDevices = [];
+  let isHotSwappingMic = false;
+
   // Enumerate Audio & Video Input Devices
   async function loadDevices() {
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
       
       const audioInputs = devices.filter(d => d.kind === 'audioinput');
+      const videoInputs = devices.filter(d => d.kind === 'videoinput');
+
+      // Populate Audio Devices Dropdown
       selectMicDevice.innerHTML = '';
       if (selectVoiceMicDevice) selectVoiceMicDevice.innerHTML = '';
 
-      if (audioInputs.length === 0) {
-        selectMicDevice.innerHTML = '<option value="">Default Microphone</option>';
-        if (selectVoiceMicDevice) selectVoiceMicDevice.innerHTML = '<option value="">Default Microphone</option>';
-      } else {
-        audioInputs.forEach((device, index) => {
-          const opt = document.createElement('option');
-          opt.value = device.deviceId;
-          opt.textContent = device.label || `Microphone ${index + 1}`;
-          if (device.deviceId === selectedMicId) opt.selected = true;
-          selectMicDevice.appendChild(opt);
+      // Always provide a clear Default Option
+      const defaultOpt = document.createElement('option');
+      defaultOpt.value = '';
+      defaultOpt.textContent = 'Default Microphone (System)';
+      selectMicDevice.appendChild(defaultOpt);
+      if (selectVoiceMicDevice) selectVoiceMicDevice.appendChild(defaultOpt.cloneNode(true));
 
-          if (selectVoiceMicDevice) {
-            const vOpt = opt.cloneNode(true);
-            selectVoiceMicDevice.appendChild(vOpt);
-          }
-        });
-      }
+      audioInputs.forEach((device, index) => {
+        if (device.deviceId === 'default') return; // Skip browser duplicate alias
 
-      const videoInputs = devices.filter(d => d.kind === 'videoinput');
+        const opt = document.createElement('option');
+        opt.value = device.deviceId;
+        opt.textContent = device.label || `Microphone ${index + 1}`;
+        if (device.deviceId === selectedMicId) opt.selected = true;
+        selectMicDevice.appendChild(opt);
+
+        if (selectVoiceMicDevice) {
+          const vOpt = opt.cloneNode(true);
+          if (device.deviceId === selectedMicId) vOpt.selected = true;
+          selectVoiceMicDevice.appendChild(vOpt);
+        }
+      });
+
+      // Populate Video Devices Dropdown
       selectCamDevice.innerHTML = '';
       if (videoInputs.length === 0) {
         selectCamDevice.innerHTML = '<option value="">Default Camera</option>';
@@ -783,6 +794,31 @@ document.addEventListener('DOMContentLoaded', async () => {
           selectCamDevice.appendChild(opt);
         });
       }
+
+      // Smart Hot-Plug & Hot-Unplug Handling
+      if (knownAudioDevices.length > 0) {
+        const prevIds = new Set(knownAudioDevices.map(d => d.deviceId));
+        const currentIds = new Set(audioInputs.map(d => d.deviceId));
+
+        // 1. Check if a newly plugged in microphone was detected
+        const newlyPlugged = audioInputs.find(d => d.deviceId && !prevIds.has(d.deviceId) && d.deviceId !== 'default');
+        if (newlyPlugged) {
+          console.log('[Capto] New microphone plugged in:', newlyPlugged.label || newlyPlugged.deviceId);
+          selectedMicId = newlyPlugged.deviceId;
+          selectMicDevice.value = selectedMicId;
+          if (selectVoiceMicDevice) selectVoiceMicDevice.value = selectedMicId;
+          await updateMicrophone(selectedMicId);
+        } else if (selectedMicId && !currentIds.has(selectedMicId)) {
+          // 2. The previously selected mic was physically unplugged! Fallback to Default
+          console.log('[Capto] Selected mic was unplugged! Auto-switching to default microphone.');
+          selectedMicId = '';
+          selectMicDevice.value = '';
+          if (selectVoiceMicDevice) selectVoiceMicDevice.value = '';
+          await updateMicrophone('');
+        }
+      }
+
+      knownAudioDevices = audioInputs;
     } catch (err) {
       console.warn('Error enumerating devices:', err);
     }
@@ -790,13 +826,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await loadDevices();
 
-  // Smart Hot-Swap Auto-Recovery
+  // Smart Hot-Swap Auto-Recovery with debounce
   if (navigator.mediaDevices.ondevicechange !== undefined) {
-    navigator.mediaDevices.ondevicechange = async () => {
-      await loadDevices();
-      if (!currentMicStream || currentMicStream.getAudioTracks().length === 0 || currentMicStream.getAudioTracks()[0].readyState === 'ended') {
-        await updateMicrophone('');
-      }
+    let deviceChangeTimeout = null;
+    navigator.mediaDevices.ondevicechange = () => {
+      if (deviceChangeTimeout) clearTimeout(deviceChangeTimeout);
+      deviceChangeTimeout = setTimeout(async () => {
+        console.log('[Capto] Device change detected, refreshing audio endpoints...');
+        await loadDevices();
+        if (!currentMicStream || currentMicStream.getAudioTracks().length === 0 || currentMicStream.getAudioTracks()[0].readyState === 'ended') {
+          console.log('[Capto] Current mic track inactive, switching to default microphone');
+          selectedMicId = '';
+          selectMicDevice.value = '';
+          if (selectVoiceMicDevice) selectVoiceMicDevice.value = '';
+          await updateMicrophone('');
+        }
+      }, 200);
     };
   }
 
@@ -804,6 +849,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function updateMicrophone(deviceId = '') {
     try {
       selectedMicId = deviceId;
+      if (selectMicDevice) selectMicDevice.value = deviceId;
+      if (selectVoiceMicDevice) selectVoiceMicDevice.value = deviceId;
+
       if (currentMicStream) {
         currentMicStream.getTracks().forEach(t => t.stop());
       }
@@ -828,6 +876,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       const audioTrack = currentMicStream.getAudioTracks()[0];
       if (audioTrack) {
         audioTrack.onended = async () => {
+          console.log('[Capto] Microphone track disconnected! Automatically falling back to default mic.');
+          selectedMicId = '';
+          selectMicDevice.value = '';
+          if (selectVoiceMicDevice) selectVoiceMicDevice.value = '';
+          await loadDevices();
           await updateMicrophone('');
         };
       }

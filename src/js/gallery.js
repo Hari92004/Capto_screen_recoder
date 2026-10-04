@@ -128,10 +128,10 @@ class CaptoGallery {
         <div style="display: flex; gap: 6px; align-items: center;">
           <span class="rec-size-badge" style="color: #AF52DE;">${sizeMb} MB</span>
           <button class="glass-action-btn" style="padding: 2px 8px; font-size: 10px;" data-path="${rec.fullPath}" title="Reveal in File Explorer">
-            📁 Reveal
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: middle;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>Reveal
           </button>
           <button class="glass-action-btn card-delete-btn" style="padding: 2px 8px; font-size: 10px; color: #FF453A;" data-delete-path="${rec.fullPath}" title="Delete Voice Recording">
-            🗑️
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
           </button>
         </div>
       </div>
@@ -143,14 +143,16 @@ class CaptoGallery {
     const cardBody = card.querySelector('.audio-card-body');
 
     const toggleAudioPlay = () => {
+      const PLAY_SVG = '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>';
+      const PAUSE_SVG = '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>';
       if (audio.paused) {
         this.pauseAllMedia(audio);
         audio.play().catch(e => console.warn('Audio play error:', e));
-        playBtn.textContent = '⏸';
+        playBtn.innerHTML = PAUSE_SVG;
         waveAnim.classList.add('playing');
       } else {
         audio.pause();
-        playBtn.textContent = '▶';
+        playBtn.innerHTML = PLAY_SVG;
         waveAnim.classList.remove('playing');
       }
     };
@@ -165,12 +167,12 @@ class CaptoGallery {
     });
 
     audio.addEventListener('ended', () => {
-      playBtn.textContent = '▶';
+      playBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>';
       waveAnim.classList.remove('playing');
     });
 
     audio.addEventListener('pause', () => {
-      playBtn.textContent = '▶';
+      playBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>';
       waveAnim.classList.remove('playing');
     });
 
@@ -192,7 +194,7 @@ class CaptoGallery {
     card.innerHTML = `
       <div class="recording-thumb" title="Click to view screenshot">
         <img src="${fileUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;" alt="Screenshot">
-        <div class="play-overlay-pill" style="font-size: 11px;">📸 View</div>
+        <div class="play-overlay-pill" style="font-size: 11px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: middle;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>View</div>
       </div>
       <div class="recording-meta">
         <span class="rec-title-text" title="${rec.filename}">${rec.filename}</span>
@@ -202,10 +204,10 @@ class CaptoGallery {
         <span style="font-size: 10px; color: var(--text-tertiary);">${dateStr}</span>
         <div style="display: flex; gap: 6px; align-items: center;">
           <button class="glass-action-btn" style="padding: 2px 8px; font-size: 10px;" data-path="${rec.fullPath}" title="Reveal in File Explorer">
-            📁 Reveal
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: middle;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>Reveal
           </button>
           <button class="glass-action-btn card-delete-btn" style="padding: 2px 8px; font-size: 10px; color: #FF453A;" data-delete-path="${rec.fullPath}" title="Delete Screenshot">
-            🗑️
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
           </button>
         </div>
       </div>
@@ -236,7 +238,7 @@ class CaptoGallery {
     card.innerHTML = `
       <div class="recording-thumb" title="Click to play / pause video">
         <video src="${fileUrl}" preload="metadata" playsinline></video>
-        <div class="play-overlay-pill">▶</div>
+        <div class="play-overlay-pill"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg></div>
       </div>
       <div class="recording-meta">
         <span class="rec-title-text" title="${rec.filename}">${rec.filename}</span>
@@ -246,10 +248,10 @@ class CaptoGallery {
         <span style="font-size: 10px; color: var(--text-tertiary);">${dateStr}</span>
         <div style="display: flex; gap: 6px; align-items: center;">
           <button class="glass-action-btn" style="padding: 2px 8px; font-size: 10px;" data-path="${rec.fullPath}" title="Reveal in File Explorer">
-            📁 Reveal
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; vertical-align: middle;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>Reveal
           </button>
           <button class="glass-action-btn card-delete-btn" style="padding: 2px 8px; font-size: 10px; color: #FF453A;" data-delete-path="${rec.fullPath}" title="Delete Recording">
-            🗑️
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
           </button>
         </div>
       </div>
