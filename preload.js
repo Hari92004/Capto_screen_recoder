@@ -71,6 +71,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   playerReady: () => ipcRenderer.send('player-ready'),
   playerMinimize: () => ipcRenderer.send('player-minimize'),
   playerMaximize: () => ipcRenderer.send('player-maximize'),
-  playerClose: () => ipcRenderer.send('player-close')
+  playerClose: () => ipcRenderer.send('player-close'),
+  denoiseMedia: (data) => ipcRenderer.invoke('denoise-media', data),
+  onRecordingsUpdated: (callback) => ipcRenderer.on('recordings-updated', () => callback())
 });
 

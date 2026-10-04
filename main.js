@@ -850,3 +850,66 @@ ipcMain.on('player-close', () => {
   }
 });
 
+// AI Audio Noise Removal & Voice Clarifier for Saved Recordings
+ipcMain.handle('denoise-media', async (event, { filePath }) => {
+  try {
+    if (!filePath || !fs.existsSync(filePath)) {
+      return { success: false, error: 'Source file does not exist' };
+    }
+
+    if (!ffmpegPath || !fs.existsSync(ffmpegPath)) {
+      return { success: false, error: 'FFmpeg encoder not available' };
+    }
+
+    const dir = path.dirname(filePath);
+    const ext = path.extname(filePath);
+    const baseName = path.basename(filePath, ext);
+    
+    // Create new clean file name, e.g. "Capto_FullScreen_..._Clean.mp4"
+    const cleanFilename = `${baseName}_Clean${ext}`;
+    const cleanFilePath = path.join(dir, cleanFilename);
+
+    const isVideo = ['.mp4', '.webm', '.mkv', '.mov', '.avi'].includes(ext.toLowerCase());
+    
+    const ffmpegArgs = isVideo
+      ? [
+          '-y',
+          '-i', filePath,
+          '-c:v', 'copy',
+          '-af', 'highpass=f=75,lowpass=f=12000,afftdn=nf=-25:tn=1,dynaudnorm=p=0.9:m=10',
+          '-c:a', 'aac',
+          '-b:a', '192k',
+          '-ar', '48000',
+          cleanFilePath
+        ]
+      : [
+          '-y',
+          '-i', filePath,
+          '-af', 'highpass=f=75,lowpass=f=12000,afftdn=nf=-25:tn=1,dynaudnorm=p=0.9:m=10',
+          '-c:a', ext.toLowerCase() === '.wav' ? 'pcm_s16le' : 'aac',
+          cleanFilePath
+        ];
+
+    console.log('[Capto] Running AI Noise Removal on:', filePath, '->', cleanFilePath);
+
+    const result = await new Promise((resolve) => {
+      execFile(ffmpegPath, ffmpegArgs, { timeout: 300000 }, (err, stdout, stderr) => {
+        if (err) {
+          console.warn('[Capto] AI Noise Removal error:', err, stderr);
+          resolve({ success: false, error: err.message });
+        } else {
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('recordings-updated');
+          }
+          resolve({ success: true, cleanFilePath, cleanFilename });
+        }
+      });
+    });
+
+    return result;
+  } catch (err) {
+    console.error('Error during AI denoise:', err);
+    return { success: false, error: err.message };
+  }
+});
+

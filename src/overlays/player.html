@@ -231,6 +231,26 @@
       background: rgba(255, 255, 255, 0.16);
       border-color: rgba(255, 255, 255, 0.3);
     }
+
+    .action-btn.ai-btn {
+      background: linear-gradient(135deg, rgba(94, 92, 230, 0.28), rgba(10, 132, 255, 0.28));
+      border: 1px solid rgba(10, 132, 255, 0.45);
+      color: #79b8ff;
+      display: inline-flex;
+    }
+
+    .action-btn.ai-btn:hover {
+      background: linear-gradient(135deg, rgba(94, 92, 230, 0.45), rgba(10, 132, 255, 0.5));
+      border-color: rgba(10, 132, 255, 0.8);
+      color: #ffffff;
+      box-shadow: 0 0 14px rgba(10, 132, 255, 0.4);
+    }
+
+    .action-btn.ai-btn:disabled {
+      opacity: 0.55;
+      cursor: wait;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -280,6 +300,13 @@
     <div class="player-footer">
       <span class="footer-left" id="footer-path"></span>
       <div class="footer-actions">
+        <button class="action-btn ai-btn" id="btn-ai-clean" title="Remove background noise (fan/hum/hiss) with AI filter">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
+          </svg>
+          <span id="ai-clean-label">AI Remove Noise</span>
+        </button>
+
         <button class="action-btn" id="btn-reveal" title="Show in File Explorer">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
           Show in Folder
@@ -304,8 +331,11 @@
     const btnMax = document.getElementById('btn-max');
     const btnClose = document.getElementById('btn-close');
     const btnReveal = document.getElementById('btn-reveal');
+    const btnAiClean = document.getElementById('btn-ai-clean');
+    const aiCleanLabel = document.getElementById('ai-clean-label');
 
     let currentFilePath = '';
+    let isCleaning = false;
 
     btnMin.onclick = () => window.electronAPI && window.electronAPI.playerMinimize();
     btnMax.onclick = () => window.electronAPI && window.electronAPI.playerMaximize();
@@ -314,6 +344,45 @@
     btnReveal.onclick = () => {
       if (currentFilePath && window.electronAPI && window.electronAPI.revealFile) {
         window.electronAPI.revealFile(currentFilePath);
+      }
+    };
+
+    btnAiClean.onclick = async () => {
+      if (isCleaning || !currentFilePath) return;
+      if (!window.electronAPI || !window.electronAPI.denoiseMedia) {
+        alert('AI Noise removal is not available.');
+        return;
+      }
+
+      isCleaning = true;
+      btnAiClean.disabled = true;
+      const originalText = aiCleanLabel.textContent;
+      aiCleanLabel.textContent = 'Removing Noise...';
+
+      try {
+        const res = await window.electronAPI.denoiseMedia({ filePath: currentFilePath });
+        if (res && res.success && res.cleanFilePath) {
+          aiCleanLabel.textContent = 'Cleaned!';
+          setTimeout(() => {
+            aiCleanLabel.textContent = 'AI Remove Noise';
+          }, 2500);
+
+          // Automatically reload player with the newly cleaned file
+          loadMedia({
+            filePath: res.cleanFilePath,
+            filename: res.cleanFilename
+          });
+        } else {
+          alert('Noise removal failed: ' + (res?.error || 'Unknown error'));
+          aiCleanLabel.textContent = originalText;
+        }
+      } catch (err) {
+        console.error('AI clean error:', err);
+        alert('Error cleaning noise: ' + err.message);
+        aiCleanLabel.textContent = originalText;
+      } finally {
+        isCleaning = false;
+        btnAiClean.disabled = false;
       }
     };
 
@@ -351,6 +420,18 @@
       const isPhoto = ['png', 'jpg', 'jpeg'].includes(ext);
       const isAudio = ['wav', 'mp3', 'm4a', 'ogg', 'aac'].includes(ext) || (!isPhoto && data.filename.toLowerCase().includes('voice') && !ext.includes('mp4'));
       const isVideo = !isPhoto && !isAudio;
+
+      // Noise reduction only applies to video and audio
+      if (isPhoto) {
+        btnAiClean.style.display = 'none';
+      } else {
+        btnAiClean.style.display = 'inline-flex';
+        if (data.filename.includes('_Clean')) {
+          aiCleanLabel.textContent = 'Cleaned ✓';
+        } else {
+          aiCleanLabel.textContent = 'AI Remove Noise';
+        }
+      }
 
       // Hide all first
       videoPlayer.style.display = 'none';

@@ -54,6 +54,12 @@ class CaptoGallery {
       };
     });
 
+    if (window.electronAPI && window.electronAPI.onRecordingsUpdated) {
+      window.electronAPI.onRecordingsUpdated(() => {
+        this.loadRecordings();
+      });
+    }
+
     this.isInitialized = true;
     this.loadRecordings();
   }
