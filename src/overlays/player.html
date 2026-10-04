@@ -373,13 +373,18 @@
             filename: res.cleanFilename
           });
         } else {
-          alert('Noise removal failed: ' + (res?.error || 'Unknown error'));
-          aiCleanLabel.textContent = originalText;
+          aiCleanLabel.textContent = 'Cleaning Failed';
+          console.warn('Noise removal failed:', res?.error);
+          setTimeout(() => {
+            aiCleanLabel.textContent = originalText;
+          }, 3000);
         }
       } catch (err) {
         console.error('AI clean error:', err);
-        alert('Error cleaning noise: ' + err.message);
-        aiCleanLabel.textContent = originalText;
+        aiCleanLabel.textContent = 'Error Occurred';
+        setTimeout(() => {
+          aiCleanLabel.textContent = originalText;
+        }, 3000);
       } finally {
         isCleaning = false;
         btnAiClean.disabled = false;

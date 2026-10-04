@@ -862,33 +862,71 @@ ipcMain.handle('denoise-media', async (event, { filePath }) => {
     }
 
     const dir = path.dirname(filePath);
-    const ext = path.extname(filePath);
-    const baseName = path.basename(filePath, ext);
+    const rawExt = path.extname(filePath);
+    const ext = rawExt.toLowerCase();
+    const baseName = path.basename(filePath, rawExt);
     
     // Create new clean file name, e.g. "Capto_FullScreen_..._Clean.mp4"
-    const cleanFilename = `${baseName}_Clean${ext}`;
+    const cleanFilename = `${baseName}_Clean${rawExt}`;
     const cleanFilePath = path.join(dir, cleanFilename);
 
-    const isVideo = ['.mp4', '.webm', '.mkv', '.mov', '.avi'].includes(ext.toLowerCase());
-    
-    const ffmpegArgs = isVideo
-      ? [
-          '-y',
-          '-i', filePath,
-          '-c:v', 'copy',
-          '-af', 'highpass=f=75,lowpass=f=12000,afftdn=nf=-25:tn=1,dynaudnorm=p=0.9:m=10',
-          '-c:a', 'aac',
-          '-b:a', '192k',
-          '-ar', '48000',
-          cleanFilePath
-        ]
-      : [
-          '-y',
-          '-i', filePath,
-          '-af', 'highpass=f=75,lowpass=f=12000,afftdn=nf=-25:tn=1,dynaudnorm=p=0.9:m=10',
-          '-c:a', ext.toLowerCase() === '.wav' ? 'pcm_s16le' : 'aac',
-          cleanFilePath
-        ];
+    // AI Audio filter chain:
+    // - highpass (75Hz): cuts low-frequency air-conditioner / fan rumble
+    // - lowpass (12000Hz): cuts extreme high-frequency hiss / coil whine
+    // - afftdn: FFT-based adaptive noise suppression filter
+    // - dynaudnorm: dynamic audio normalization for crisp speech volume
+    const audioFilter = 'highpass=f=75,lowpass=f=12000,afftdn=nf=-25:tn=1,dynaudnorm=p=0.9:m=10';
+
+    let ffmpegArgs = [];
+    if (ext === '.webm') {
+      // WebM strictly mandates libopus or vorbis audio. Supports optional video track.
+      ffmpegArgs = [
+        '-y',
+        '-i', filePath,
+        '-map', '0:v?',
+        '-c:v', 'copy',
+        '-map', '0:a?',
+        '-af', audioFilter,
+        '-c:a', 'libopus',
+        '-b:a', '128k',
+        cleanFilePath
+      ];
+    } else if (ext === '.wav') {
+      // WAV uncompressed PCM audio
+      ffmpegArgs = [
+        '-y',
+        '-i', filePath,
+        '-map', '0:a?',
+        '-af', audioFilter,
+        '-c:a', 'pcm_s16le',
+        cleanFilePath
+      ];
+    } else if (ext === '.mp3') {
+      // MP3 audio
+      ffmpegArgs = [
+        '-y',
+        '-i', filePath,
+        '-map', '0:a?',
+        '-af', audioFilter,
+        '-c:a', 'libmp3lame',
+        '-b:a', '192k',
+        cleanFilePath
+      ];
+    } else {
+      // MP4, MOV, MKV (AAC audio + stream copy video if present)
+      ffmpegArgs = [
+        '-y',
+        '-i', filePath,
+        '-map', '0:v?',
+        '-c:v', 'copy',
+        '-map', '0:a?',
+        '-af', audioFilter,
+        '-c:a', 'aac',
+        '-b:a', '192k',
+        '-ar', '48000',
+        cleanFilePath
+      ];
+    }
 
     console.log('[Capto] Running AI Noise Removal on:', filePath, '->', cleanFilePath);
 
@@ -896,7 +934,10 @@ ipcMain.handle('denoise-media', async (event, { filePath }) => {
       execFile(ffmpegPath, ffmpegArgs, { timeout: 300000 }, (err, stdout, stderr) => {
         if (err) {
           console.warn('[Capto] AI Noise Removal error:', err, stderr);
-          resolve({ success: false, error: err.message });
+          // Return concise last lines of error
+          const stderrLines = (stderr || '').split('\n').map(l => l.trim()).filter(Boolean);
+          const shortErr = stderrLines.slice(-2).join(' ') || err.message;
+          resolve({ success: false, error: shortErr });
         } else {
           if (mainWindow && !mainWindow.isDestroyed()) {
             mainWindow.webContents.send('recordings-updated');
