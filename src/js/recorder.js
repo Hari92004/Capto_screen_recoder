@@ -194,9 +194,6 @@ class CaptoRecorder {
         await this.startScreenStream();
       }
 
-      if (this.currentMode === 'dual' && (!this.cameraStream || this.cameraStream.getVideoTracks().length === 0 || this.cameraStream.getVideoTracks()[0].readyState === 'ended')) {
-        await this.startCamera();
-      }
 
       // Audio DSP Pipeline
       let processedAudioStream = null;
@@ -532,9 +529,6 @@ class CaptoRecorder {
   async takeScreenshot() {
     if (!this.screenStream) {
       await this.startScreenStream();
-    }
-    if (this.currentMode === 'dual' && !this.cameraStream) {
-      await this.startCamera();
     }
 
     const isRegion = this.currentMode === 'region' && this.selectedRegion;

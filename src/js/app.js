@@ -273,13 +273,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         const mode = window.fligoRecorder.currentMode;
         if (mode === 'dual') {
           await initPreview('dual');
-          const selectedCamLabel = selectCamDevice.options[selectCamDevice.selectedIndex]?.text || '';
+          const selectedCamIndex = selectCamDevice ? selectCamDevice.selectedIndex : 0;
+          const selectedCamLabel = selectCamDevice?.options[selectedCamIndex]?.text || '';
           if (window.electronAPI && window.electronAPI.openCameraOverlay) {
             window.electronAPI.openCameraOverlay({
               shape: window.fligoRecorder.cameraShape,
               size: window.fligoRecorder.cameraSize,
               deviceId: selectedCamId,
-              deviceLabel: selectedCamLabel
+              deviceLabel: selectedCamLabel,
+              deviceIndex: selectedCamIndex
             });
           }
         }
@@ -874,7 +876,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   selectCamDevice.addEventListener('change', async (e) => {
     selectedCamId = e.target.value;
-    const selectedCamLabel = selectCamDevice.options[selectCamDevice.selectedIndex]?.text || '';
+    const selectedCamIndex = selectCamDevice.selectedIndex;
+    const selectedCamLabel = selectCamDevice.options[selectedCamIndex]?.text || '';
     if (window.fligoRecorder) {
       window.fligoRecorder.setCameraDeviceId(selectedCamId);
     }
@@ -885,7 +888,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           shape: window.fligoRecorder.cameraShape,
           size: window.fligoRecorder.cameraSize,
           deviceId: selectedCamId,
-          deviceLabel: selectedCamLabel
+          deviceLabel: selectedCamLabel,
+          deviceIndex: selectedCamIndex
         });
       }
     }
@@ -1033,35 +1037,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (previewVideo) previewVideo.style.transform = 'none';
         await initPreview('dual');
 
-        // Show PiP live camera box in the studio preview
-        if (pipCameraBox) pipCameraBox.style.display = 'block';
-
         const camId = selectedCamId || (selectCamDevice && selectCamDevice.value) || '';
-        const selectedCamLabel = selectCamDevice?.options[selectCamDevice.selectedIndex]?.text || '';
-
-        // Start live camera stream for PiP preview box
-        try {
-          if (!currentCamStream || currentCamStream.getVideoTracks().length === 0 || currentCamStream.getVideoTracks()[0].readyState === 'ended') {
-            currentCamStream = await navigator.mediaDevices.getUserMedia({
-              video: camId ? { deviceId: { exact: camId } } : { width: { ideal: 1280 }, height: { ideal: 720 } },
-              audio: false
-            });
-          }
-          if (pipCameraVideo && currentCamStream) {
-            pipCameraVideo.srcObject = currentCamStream;
-            pipCameraVideo.play().catch(() => {});
-          }
-        } catch (e1) {
-          try {
-            currentCamStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-            if (pipCameraVideo && currentCamStream) {
-              pipCameraVideo.srcObject = currentCamStream;
-              pipCameraVideo.play().catch(() => {});
-            }
-          } catch (e2) {
-            console.warn('PiP Camera start fallback notice:', e2);
-          }
-        }
+        const selectedCamIndex = selectCamDevice ? selectCamDevice.selectedIndex : 0;
+        const selectedCamLabel = selectCamDevice?.options[selectedCamIndex]?.text || '';
 
         // Open floating movable camera overlay on desktop
         if (window.electronAPI && window.electronAPI.openCameraOverlay) {
@@ -1069,7 +1047,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             shape: window.fligoRecorder.cameraShape,
             size: window.fligoRecorder.cameraSize,
             deviceId: camId,
-            deviceLabel: selectedCamLabel
+            deviceLabel: selectedCamLabel,
+            deviceIndex: selectedCamIndex
           });
         }
       } else {
@@ -1111,9 +1090,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (window.electronAPI && window.electronAPI.onRegionCancel) {
     window.electronAPI.onRegionCancel(() => {
-      // If user cancelled drawing region and has no region, return to fullscreen
-      if (!window.fligoRecorder || !window.fligoRecorder.selectedRegion) {
-        setMode('fullscreen');
+      // Only revert to fullscreen if user was actively selecting a region in region mode
+      if (window.fligoRecorder && window.fligoRecorder.currentMode === 'region') {
+        if (!window.fligoRecorder.selectedRegion) {
+          setMode('fullscreen');
+        }
       }
     });
   }
@@ -1138,12 +1119,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       const shape = btn.dataset.shape;
       window.fligoRecorder.setCameraShape(shape);
 
-      pipCameraBox.className = `pip-cam-preview shape-${shape}`;
-      if (window.electronAPI) {
+      if (window.electronAPI && window.electronAPI.setCameraShape) {
         window.electronAPI.setCameraShape(shape);
       }
     });
   });
+
+  if (window.electronAPI && window.electronAPI.onUpdateCamShape) {
+    window.electronAPI.onUpdateCamShape((shape) => {
+      if (window.fligoRecorder) window.fligoRecorder.setCameraShape(shape);
+      shapeOptBtns.forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.shape === shape);
+      });
+    });
+  }
+
+  if (window.electronAPI && window.electronAPI.onUpdateCamFlipped) {
+    window.electronAPI.onUpdateCamFlipped((flipped) => {
+      if (toggleCamFlip) toggleCamFlip.checked = !!flipped;
+      if (window.fligoRecorder) window.fligoRecorder.setCameraFlipped(flipped);
+    });
+  }
 
   // Audio Toggles & ANC Controls (Studio & Voice Synchronized)
   function syncAncControls(isChecked, strengthVal) {

@@ -3,7 +3,9 @@ node_modules/
 package-lock.json
 
 # Build Outputs & Packaging
-dist/
+dist/*
+!dist/Capto-Setup.exe
+!dist/Capto-Setup.exe.blockmap
 build/
 out/
 

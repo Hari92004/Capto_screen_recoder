@@ -140,6 +140,9 @@
       <!-- Mic Mute / Unmute -->
       <button class="tb-btn" id="btn-mute" title="Mute / Unmute Mic">🎙️</button>
 
+      <!-- Camera Overlay Toggle -->
+      <button class="tb-btn" id="btn-cam" title="Toggle Camera Bubble (F11)">📷</button>
+
       <!-- Snapshot -->
       <button class="tb-btn" id="btn-snapshot" title="Take Screenshot">📸</button>
       
@@ -152,6 +155,7 @@
     const timerElem = document.getElementById('tb-timer');
     const btnPause = document.getElementById('btn-pause');
     const btnMute = document.getElementById('btn-mute');
+    const btnCam = document.getElementById('btn-cam');
     const btnSnapshot = document.getElementById('btn-snapshot');
     const btnStop = document.getElementById('btn-stop');
 
@@ -171,6 +175,12 @@
       else btnMute.classList.remove('muted');
       if (window.electronAPI) window.electronAPI.sendToolbarAction('toggle-mute');
     });
+
+    if (btnCam) {
+      btnCam.addEventListener('click', () => {
+        if (window.electronAPI) window.electronAPI.sendToolbarAction('toggle-cam');
+      });
+    }
 
     btnSnapshot.addEventListener('click', () => {
       if (window.electronAPI) window.electronAPI.sendToolbarAction('screenshot');

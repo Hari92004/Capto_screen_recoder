@@ -43,6 +43,7 @@
     "productName": "Capto",
     "executableName": "Capto",
     "copyright": "Copyright © 2026 Hari",
+    "afterPack": "./scripts/afterPack.js",
     "directories": {
       "output": "dist"
     },

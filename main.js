@@ -29,25 +29,55 @@ let toolbarWindow = null;
 const icoPath = path.join(__dirname, 'src', 'assets', 'icon.ico');
 const pngPath = path.join(__dirname, 'src', 'assets', 'icon.png');
 const appIconPath = (process.platform === 'win32' && fs.existsSync(icoPath)) ? icoPath : pngPath;
-const appIcon = fs.existsSync(appIconPath) ? nativeImage.createFromPath(appIconPath) : null;
+let appIcon = null;
+try {
+  if (fs.existsSync(icoPath)) {
+    appIcon = nativeImage.createFromPath(icoPath);
+  } else if (fs.existsSync(pngPath)) {
+    appIcon = nativeImage.createFromPath(pngPath);
+  }
+} catch (e) {}
 
-// Ensure Windows Native Start Menu Shortcut & Taskbar JumpList Identity
+// Ensure Windows Native Start Menu & Desktop Shortcuts with Real Disk Icon
 if (process.platform === 'win32') {
-  try {
-    const appData = app.getPath('appData');
-    const startMenuDir = path.join(appData, 'Microsoft', 'Windows', 'Start Menu', 'Programs');
-    const shortcutPath = path.join(startMenuDir, 'Capto.lnk');
-    const unpackedExe = path.join(__dirname, 'dist', 'win-unpacked', 'Capto.exe');
-    const targetExe = fs.existsSync(unpackedExe) ? unpackedExe : process.execPath;
-    
-    shell.writeShortcutLink(shortcutPath, 'create', {
-      target: targetExe,
-      description: 'Capto Screen Recorder',
-      icon: icoPath,
-      iconIndex: 0,
-      appUserModelId: 'com.capto.screenrecorder'
-    });
-  } catch (e) {}
+  app.whenReady().then(() => {
+    try {
+      const targetExe = process.execPath;
+      const userData = app.getPath('userData');
+      const physicalIcoPath = path.join(userData, 'icon.ico');
+
+      // Windows Shell cannot read icon files from inside an asar archive,
+      // so extract a copy to userData so Windows Explorer always has the physical icon file
+      if (!fs.existsSync(physicalIcoPath) && fs.existsSync(icoPath)) {
+        try {
+          fs.mkdirSync(userData, { recursive: true });
+          fs.writeFileSync(physicalIcoPath, fs.readFileSync(icoPath));
+        } catch (err) {}
+      }
+
+      const iconFile = fs.existsSync(physicalIcoPath) ? physicalIcoPath : (fs.existsSync(icoPath) ? icoPath : targetExe);
+
+      const appData = app.getPath('appData');
+      const startMenuDir = path.join(appData, 'Microsoft', 'Windows', 'Start Menu', 'Programs');
+      const startMenuShortcut = path.join(startMenuDir, 'Capto.lnk');
+      const desktopDir = app.getPath('desktop');
+      const desktopShortcut = path.join(desktopDir, 'Capto.lnk');
+
+      const shortcutOptions = {
+        target: targetExe,
+        cwd: path.dirname(targetExe),
+        description: 'Capto Screen Recorder',
+        icon: iconFile,
+        iconIndex: 0,
+        appUserModelId: 'com.capto.screenrecorder'
+      };
+
+      shell.writeShortcutLink(startMenuShortcut, 'create', shortcutOptions);
+      if (fs.existsSync(desktopDir)) {
+        shell.writeShortcutLink(desktopShortcut, 'create', shortcutOptions);
+      }
+    } catch (e) {}
+  });
 }
 
 // Target Saved Folder: "Screen Recordings" in Videos
@@ -227,13 +257,13 @@ function hideCropBorder() {
 }
 
 // Fixed-Size Floating Movable Camera Overlay
-function openCameraOverlay(shape = 'circle', size = 190, deviceId = '', deviceLabel = '') {
+function openCameraOverlay(shape = 'circle', size = 190, deviceId = '', deviceLabel = '', deviceIndex = 0) {
   if (cameraOverlayWindow && !cameraOverlayWindow.isDestroyed()) {
     cameraOverlayWindow.show();
     try {
       cameraOverlayWindow.setAlwaysOnTop(true, 'screen-saver');
     } catch (e) {}
-    cameraOverlayWindow.webContents.send('update-cam-settings', { shape, size, deviceId, deviceLabel });
+    cameraOverlayWindow.webContents.send('update-cam-settings', { shape, size, deviceId, deviceLabel, deviceIndex });
     return;
   }
 
@@ -270,7 +300,7 @@ function openCameraOverlay(shape = 'circle', size = 190, deviceId = '', deviceLa
 
   cameraOverlayWindow.webContents.on('did-finish-load', () => {
     if (cameraOverlayWindow && !cameraOverlayWindow.isDestroyed()) {
-      cameraOverlayWindow.webContents.send('init-cam-settings', { shape, size, deviceId, deviceLabel });
+      cameraOverlayWindow.webContents.send('init-cam-settings', { shape, size, deviceId, deviceLabel, deviceIndex });
     }
   });
 
@@ -290,9 +320,9 @@ function openToolbar() {
   const { width } = primaryDisplay.workArea;
 
   toolbarWindow = new BrowserWindow({
-    x: Math.round(width / 2 - 140),
+    x: Math.round(width / 2 - 160),
     y: 12,
-    width: 280,
+    width: 320,
     height: 44,
     frame: false,
     transparent: true,
@@ -467,7 +497,8 @@ ipcMain.on('open-camera-overlay', (event, options = {}) => {
   const size = options?.size || 190;
   const deviceId = options?.deviceId || '';
   const deviceLabel = options?.deviceLabel || '';
-  openCameraOverlay(shape, size, deviceId, deviceLabel);
+  const deviceIndex = options?.deviceIndex ?? 0;
+  openCameraOverlay(shape, size, deviceId, deviceLabel, deviceIndex);
 });
 
 ipcMain.on('close-camera-overlay', () => {
@@ -481,32 +512,38 @@ ipcMain.on('close-camera-overlay', () => {
 });
 
 ipcMain.on('set-camera-shape', (event, shape) => {
-  if (cameraOverlayWindow) {
+  if (cameraOverlayWindow && !cameraOverlayWindow.isDestroyed()) {
     cameraOverlayWindow.webContents.send('update-cam-shape', shape);
+  }
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('update-cam-shape', shape);
   }
 });
 
 ipcMain.on('set-camera-size', (event, size) => {
-  if (cameraOverlayWindow) {
+  if (cameraOverlayWindow && !cameraOverlayWindow.isDestroyed()) {
     cameraOverlayWindow.setSize(size, size);
   }
 });
 
 ipcMain.on('set-camera-brightness', (event, val) => {
-  if (cameraOverlayWindow) {
+  if (cameraOverlayWindow && !cameraOverlayWindow.isDestroyed()) {
     cameraOverlayWindow.webContents.send('update-cam-brightness', val);
   }
 });
 
 ipcMain.on('set-camera-filters', (event, filters) => {
-  if (cameraOverlayWindow) {
+  if (cameraOverlayWindow && !cameraOverlayWindow.isDestroyed()) {
     cameraOverlayWindow.webContents.send('update-cam-filters', filters);
   }
 });
 
 ipcMain.on('set-camera-flipped', (event, flipped) => {
-  if (cameraOverlayWindow) {
+  if (cameraOverlayWindow && !cameraOverlayWindow.isDestroyed()) {
     cameraOverlayWindow.webContents.send('update-cam-flipped', flipped);
+  }
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('update-cam-flipped', flipped);
   }
 });
 
@@ -527,7 +564,14 @@ ipcMain.on('hide-toolbar', () => {
 
 // Forward Toolbar Button Actions to Main Window
 ipcMain.on('toolbar-action', (event, action) => {
-  if (mainWindow) {
+  if (action === 'toggle-cam') {
+    if (cameraOverlayWindow && !cameraOverlayWindow.isDestroyed()) {
+      if (cameraOverlayWindow.isVisible()) cameraOverlayWindow.hide();
+      else cameraOverlayWindow.show();
+    } else {
+      openCameraOverlay();
+    }
+  } else if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('from-toolbar', action);
   }
 });

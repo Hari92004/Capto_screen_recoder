@@ -133,13 +133,13 @@
     let isFlipped = true;
     let currentStream = null;
     let isInitializing = false;
+    let pendingInit = null;
 
     function applyFlip() {
       if (video) {
         video.style.transform = isFlipped ? 'scaleX(-1)' : 'none';
       }
     }
-
 
     function stopStream() {
       if (currentStream) {
@@ -156,81 +156,140 @@
       }
     }
 
-    async function initCamera(targetDeviceId = '', targetLabel = '') {
-      if (isInitializing) return;
+    async function initCamera(targetDeviceId = '', targetLabel = '', targetIndex = 0) {
+      if (isInitializing) {
+        pendingInit = { targetDeviceId, targetLabel, targetIndex };
+        return;
+      }
       isInitializing = true;
 
       try {
         stopStream();
-        // Give Windows USB and DroidCam driver 180ms to completely release hardware lock
-        await new Promise(r => setTimeout(r, 180));
+        // Give Windows USB and UVC driver 120ms to completely release hardware lock
+        await new Promise(r => setTimeout(r, 120));
 
-        // Enumerate local devices in this window to resolve exact local device ID
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const videoDevices = devices.filter(d => d.kind === 'videoinput');
+        let stream = null;
 
-        let matchedDevice = null;
-        if (targetLabel) {
-          const cleanLabel = targetLabel.trim().toLowerCase();
-          matchedDevice = videoDevices.find(d => d.label && d.label.trim().toLowerCase() === cleanLabel);
-          if (!matchedDevice) {
-            matchedDevice = videoDevices.find(d => d.label && (d.label.toLowerCase().includes(cleanLabel) || cleanLabel.includes(d.label.toLowerCase())));
-          }
-        }
-
-        if (!matchedDevice && targetDeviceId) {
-          matchedDevice = videoDevices.find(d => d.deviceId === targetDeviceId);
-        }
-
-        if (!matchedDevice && videoDevices.length > 0) {
-          matchedDevice = videoDevices[0];
-        }
-
-        const localId = matchedDevice ? matchedDevice.deviceId : targetDeviceId;
-
-        if (localId) {
+        // 1. Try targetDeviceId first if supplied
+        if (targetDeviceId) {
           try {
-            currentStream = await navigator.mediaDevices.getUserMedia({
+            stream = await navigator.mediaDevices.getUserMedia({
               video: {
-                deviceId: { exact: localId },
+                deviceId: { exact: targetDeviceId },
                 width: { ideal: 1280 },
                 height: { ideal: 720 }
               },
               audio: false
             });
           } catch (e1) {
-            console.warn('Exact deviceId failed, attempting ideal:', e1);
             try {
-              currentStream = await navigator.mediaDevices.getUserMedia({
+              stream = await navigator.mediaDevices.getUserMedia({
                 video: {
-                  deviceId: { ideal: localId }
+                  deviceId: { ideal: targetDeviceId }
                 },
                 audio: false
               });
-            } catch (e2) {
-              currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-            }
+            } catch (e2) {}
           }
-        } else {
-          currentStream = await navigator.mediaDevices.getUserMedia({
-            video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-            audio: false
-          });
         }
 
-        if (video && currentStream) {
-          video.srcObject = currentStream;
+        // 2. If no stream yet, enumerate local devices to match by label or index
+        if (!stream) {
+          try {
+            // Pre-warm camera permission to ensure labels are populated
+            let tempStream = null;
+            try {
+              tempStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            } catch (te) {}
+
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoDevices = devices.filter(d => d.kind === 'videoinput');
+
+            if (tempStream) {
+              tempStream.getTracks().forEach(t => t.stop());
+            }
+
+            let matched = null;
+            if (targetLabel && targetLabel.trim()) {
+              const clean = targetLabel.trim().toLowerCase();
+              matched = videoDevices.find(d => d.label && d.label.trim().toLowerCase() === clean);
+              if (!matched) {
+                matched = videoDevices.find(d => d.label && (d.label.toLowerCase().includes(clean) || clean.includes(d.label.toLowerCase())));
+              }
+            }
+
+            if (!matched && typeof targetIndex === 'number' && videoDevices[targetIndex]) {
+              matched = videoDevices[targetIndex];
+            }
+
+            if (!matched && videoDevices.length > 0) {
+              matched = videoDevices[0];
+            }
+
+            if (matched && matched.deviceId) {
+              try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                  video: {
+                    deviceId: { exact: matched.deviceId },
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                  },
+                  audio: false
+                });
+              } catch (me) {
+                stream = await navigator.mediaDevices.getUserMedia({
+                  video: {
+                    deviceId: { ideal: matched.deviceId }
+                  },
+                  audio: false
+                });
+              }
+            }
+          } catch (e3) {}
+        }
+
+        // 3. Fallback to any available video stream
+        if (!stream) {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+              audio: false
+            });
+          } catch (e4) {
+            console.error('All camera attempts failed in overlay:', e4);
+          }
+        }
+
+        if (video && stream) {
+          currentStream = stream;
+          video.srcObject = stream;
           video.play().catch(() => {});
+          applyFilters();
+
+          const vTrack = stream.getVideoTracks()[0];
+          if (vTrack) {
+            vTrack.onended = () => {
+              console.warn('Overlay video track ended, reconnecting...');
+              setTimeout(() => initCamera(targetDeviceId, targetLabel, targetIndex), 400);
+            };
+          }
         }
       } catch (err) {
         console.error('Webcam error in camera overlay:', err);
       } finally {
         isInitializing = false;
+        if (pendingInit) {
+          const next = pendingInit;
+          pendingInit = null;
+          initCamera(next.targetDeviceId, next.targetLabel, next.targetIndex);
+        }
       }
     }
 
     function setShape(shape) {
       container.className = `cam-container shape-${shape}`;
+      const idx = shapes.indexOf(shape);
+      if (idx !== -1) currentShapeIndex = idx;
     }
 
     btnCycleShape.addEventListener('click', (e) => {
@@ -238,7 +297,7 @@
       currentShapeIndex = (currentShapeIndex + 1) % shapes.length;
       const nextShape = shapes[currentShapeIndex];
       setShape(nextShape);
-      if (window.electronAPI) {
+      if (window.electronAPI && window.electronAPI.setCameraShape) {
         window.electronAPI.setCameraShape(nextShape);
       }
     });
@@ -248,13 +307,16 @@
         e.stopPropagation();
         isFlipped = !isFlipped;
         applyFlip();
+        if (window.electronAPI && window.electronAPI.setCameraFlipped) {
+          window.electronAPI.setCameraFlipped(isFlipped);
+        }
       });
     }
 
     btnCloseCam.addEventListener('click', (e) => {
       e.stopPropagation();
       stopStream();
-      if (window.electronAPI) {
+      if (window.electronAPI && window.electronAPI.closeCameraOverlay) {
         window.electronAPI.closeCameraOverlay();
       }
     });
@@ -283,20 +345,23 @@
       applyFlip();
     }
 
+    let hasReceivedSettings = false;
+
     if (window.electronAPI) {
       window.electronAPI.onStopCamFeed(() => {
         stopStream();
       });
 
-      window.electronAPI.onInitCamSettings(({ shape, deviceId, deviceLabel }) => {
+      window.electronAPI.onInitCamSettings(({ shape, deviceId, deviceLabel, deviceIndex }) => {
+        hasReceivedSettings = true;
         if (shape) setShape(shape);
-        initCamera(deviceId || '', deviceLabel || '');
+        initCamera(deviceId || '', deviceLabel || '', deviceIndex || 0);
         applyFilters();
       });
 
-      window.electronAPI.onUpdateCamSettings(({ shape, deviceId, deviceLabel }) => {
+      window.electronAPI.onUpdateCamSettings(({ shape, deviceId, deviceLabel, deviceIndex }) => {
         if (shape) setShape(shape);
-        initCamera(deviceId || '', deviceLabel || '');
+        initCamera(deviceId || '', deviceLabel || '', deviceIndex || 0);
       });
 
       window.electronAPI.onUpdateCamShape((shape) => {
@@ -321,8 +386,12 @@
       });
     }
 
-    // Always ensure camera feed starts immediately on load
-    initCamera();
+    // Safety fallback: only start default camera if no IPC settings received within 350ms
+    setTimeout(() => {
+      if (!hasReceivedSettings && !currentStream) {
+        initCamera();
+      }
+    }, 350);
 
   </script>
 </body>
