@@ -184,28 +184,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Hover to expand / leave to collapse in Dynamic Island Custom Crop Mode
-  if (appWindow) {
-    appWindow.addEventListener('mouseenter', () => {
-      if (isCustomCropIslandMode && isIslandCollapsed) {
-        expandFromIsland();
-      } else {
-        clearTimeout(collapseTimeout);
-      }
-    });
-
-    appWindow.addEventListener('mouseleave', () => {
-      if (isCustomCropIslandMode && !isIslandCollapsed) {
-        clearTimeout(collapseTimeout);
-        collapseTimeout = setTimeout(() => {
-          collapseToIsland();
-        }, 400);
-      }
-    });
-  }
-
+  // Click to expand Dynamic Island Custom Crop Mode (instead of hover)
   if (dynamicIslandBar) {
-    dynamicIslandBar.addEventListener('mouseenter', () => {
+    dynamicIslandBar.addEventListener('click', (e) => {
+      // Don't expand if clicking on recording or crop button
+      if (e.target.closest('#btn-di-rec') || e.target.closest('#btn-di-reselect')) {
+        return;
+      }
       if (isCustomCropIslandMode && isIslandCollapsed) {
         expandFromIsland();
       }
@@ -215,7 +200,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (diHoverHint) {
     diHoverHint.addEventListener('click', (e) => {
       e.stopPropagation();
-      expandFromIsland();
+      if (isCustomCropIslandMode) {
+        expandFromIsland();
+      }
     });
   }
 
@@ -906,6 +893,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Camera Feeds Controller
   async function stopCameraFeeds() {
+    if (pipCameraBox) {
+      pipCameraBox.style.display = 'none';
+    }
     if (currentCamStream) {
       currentCamStream.getTracks().forEach(t => t.stop());
       currentCamStream = null;
@@ -995,7 +985,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (rowCamNoiseReduction) rowCamNoiseReduction.style.display = mode === 'dual' ? 'flex' : 'none';
     if (rowCamFlip) rowCamFlip.style.display = mode === 'dual' ? 'flex' : 'none';
 
-    await stopCameraFeeds();
+    if (mode !== 'dual') {
+      await stopCameraFeeds();
+    }
 
     if (mode === 'region') {
       if (previewVideo) previewVideo.style.transform = 'none';
@@ -1040,12 +1032,43 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (mode === 'dual') {
         if (previewVideo) previewVideo.style.transform = 'none';
         await initPreview('dual');
-        const selectedCamLabel = selectCamDevice.options[selectCamDevice.selectedIndex]?.text || '';
+
+        // Show PiP live camera box in the studio preview
+        if (pipCameraBox) pipCameraBox.style.display = 'block';
+
+        const camId = selectedCamId || (selectCamDevice && selectCamDevice.value) || '';
+        const selectedCamLabel = selectCamDevice?.options[selectCamDevice.selectedIndex]?.text || '';
+
+        // Start live camera stream for PiP preview box
+        try {
+          if (!currentCamStream || currentCamStream.getVideoTracks().length === 0 || currentCamStream.getVideoTracks()[0].readyState === 'ended') {
+            currentCamStream = await navigator.mediaDevices.getUserMedia({
+              video: camId ? { deviceId: { exact: camId } } : { width: { ideal: 1280 }, height: { ideal: 720 } },
+              audio: false
+            });
+          }
+          if (pipCameraVideo && currentCamStream) {
+            pipCameraVideo.srcObject = currentCamStream;
+            pipCameraVideo.play().catch(() => {});
+          }
+        } catch (e1) {
+          try {
+            currentCamStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            if (pipCameraVideo && currentCamStream) {
+              pipCameraVideo.srcObject = currentCamStream;
+              pipCameraVideo.play().catch(() => {});
+            }
+          } catch (e2) {
+            console.warn('PiP Camera start fallback notice:', e2);
+          }
+        }
+
+        // Open floating movable camera overlay on desktop
         if (window.electronAPI && window.electronAPI.openCameraOverlay) {
           window.electronAPI.openCameraOverlay({
             shape: window.fligoRecorder.cameraShape,
             size: window.fligoRecorder.cameraSize,
-            deviceId: selectedCamId,
+            deviceId: camId,
             deviceLabel: selectedCamLabel
           });
         }

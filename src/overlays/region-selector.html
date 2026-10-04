@@ -24,31 +24,32 @@
     /* Top Instruction Banner */
     .instruction-bar {
       position: fixed;
-      top: 24px;
+      top: 20px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(15, 20, 30, 0.9);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      background: rgba(15, 20, 30, 0.92);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
       border: 1px solid rgba(255, 255, 255, 0.2);
       color: white;
-      padding: 8px 20px;
+      padding: 8px 24px;
       border-radius: 30px;
       font-size: 13px;
       font-weight: 600;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
       z-index: 9999;
       pointer-events: none;
     }
 
     .key-badge {
       background: rgba(255, 255, 255, 0.15);
-      padding: 2px 8px;
+      padding: 3px 9px;
       border-radius: 6px;
       font-size: 11px;
+      font-family: 'SF Mono', monospace;
     }
 
     /* Selection Box */
@@ -56,110 +57,426 @@
       position: absolute;
       border: 2px solid #0A84FF;
       background: rgba(10, 132, 255, 0.08);
-      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55), 0 0 20px rgba(10, 132, 255, 0.4);
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55), 0 0 24px rgba(10, 132, 255, 0.45);
       display: none;
-      pointer-events: none;
+      pointer-events: auto;
+      cursor: move;
+    }
+
+    #selection-box.resizing {
+      cursor: default;
     }
 
     /* Dimension Badge */
     #dimension-badge {
       position: absolute;
-      top: -32px;
+      top: -34px;
       left: 0;
       background: #0A84FF;
       color: white;
-      font-family: monospace;
+      font-family: 'SF Mono', monospace, 'JetBrains Mono';
       font-size: 12px;
       font-weight: 700;
       padding: 4px 10px;
       border-radius: 6px;
       white-space: nowrap;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
       pointer-events: none;
+      z-index: 100;
     }
+
+    /* Floating Action Controls on Box */
+    #box-action-bar {
+      position: absolute;
+      bottom: -48px;
+      right: 0;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      background: rgba(15, 20, 30, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 6px 12px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      pointer-events: auto;
+      z-index: 100;
+    }
+
+    .action-btn {
+      border: none;
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-confirm {
+      background: linear-gradient(135deg, #0A84FF 0%, #0066CC 100%);
+      color: white;
+      box-shadow: 0 2px 8px rgba(10, 132, 255, 0.4);
+    }
+    .btn-confirm:hover {
+      background: #0077ED;
+      transform: scale(1.04);
+    }
+
+    .btn-redraw {
+      background: rgba(255, 255, 255, 0.12);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .btn-redraw:hover {
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    .btn-cancel {
+      background: rgba(255, 69, 58, 0.2);
+      color: #FF453A;
+      border: 1px solid rgba(255, 69, 58, 0.35);
+    }
+    .btn-cancel:hover {
+      background: rgba(255, 69, 58, 0.35);
+    }
+
+    /* 8 Interactive Resize Handles */
+    .resize-handle {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      background: #FFFFFF;
+      border: 2px solid #0A84FF;
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
+      z-index: 50;
+      display: none;
+    }
+
+    .resize-handle:hover {
+      transform: scale(1.3);
+      background: #0A84FF;
+      border-color: #FFFFFF;
+    }
+
+    .handle-nw { top: -6px; left: -6px; cursor: nwse-resize; }
+    .handle-n  { top: -6px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+    .handle-ne { top: -6px; right: -6px; cursor: nesw-resize; }
+    .handle-e  { top: 50%; right: -6px; transform: translateY(-50%); cursor: ew-resize; }
+    .handle-se { bottom: -6px; right: -6px; cursor: nwse-resize; }
+    .handle-s  { bottom: -6px; left: 50%; transform: translateX(-50%); cursor: ns-resize; }
+    .handle-sw { bottom: -6px; left: -6px; cursor: nesw-resize; }
+    .handle-w  { top: 50%; left: -6px; transform: translateY(-50%); cursor: ew-resize; }
   </style>
 </head>
 <body>
 
-  <div class="instruction-bar">
-    <span>📐 Click & Drag to select recording area</span>
-    <span class="key-badge">ESC / Click to Cancel</span>
+  <div class="instruction-bar" id="instruction-bar">
+    <span id="instruction-text">📐 Click & Drag to select recording area</span>
+    <span class="key-badge">ESC: Cancel</span>
+    <span class="key-badge">ENTER: Confirm</span>
   </div>
 
   <div id="selection-box">
     <div id="dimension-badge">0 × 0</div>
+
+    <!-- 8 Interactive Resize Handles -->
+    <div class="resize-handle handle-nw" data-handle="nw"></div>
+    <div class="resize-handle handle-n"  data-handle="n"></div>
+    <div class="resize-handle handle-ne" data-handle="ne"></div>
+    <div class="resize-handle handle-e"  data-handle="e"></div>
+    <div class="resize-handle handle-se" data-handle="se"></div>
+    <div class="resize-handle handle-s"  data-handle="s"></div>
+    <div class="resize-handle handle-sw" data-handle="sw"></div>
+    <div class="resize-handle handle-w"  data-handle="w"></div>
+
+    <!-- Action Toolbar attached to box -->
+    <div id="box-action-bar">
+      <button class="action-btn btn-confirm" id="btn-confirm-crop">✓ Confirm Area</button>
+      <button class="action-btn btn-redraw" id="btn-redraw-crop">✂ Redraw</button>
+      <button class="action-btn btn-cancel" id="btn-cancel-crop">✕ Cancel</button>
+    </div>
   </div>
 
   <script>
-    let isSelecting = false;
-    let startX = 0;
-    let startY = 0;
-
     const box = document.getElementById('selection-box');
     const badge = document.getElementById('dimension-badge');
+    const actionBar = document.getElementById('box-action-bar');
+    const instructionText = document.getElementById('instruction-text');
+    const handles = document.querySelectorAll('.resize-handle');
 
+    const btnConfirm = document.getElementById('btn-confirm-crop');
+    const btnRedraw = document.getElementById('btn-redraw-crop');
+    const btnCancel = document.getElementById('btn-cancel-crop');
+
+    // Box Geometry
+    let currentX = 0;
+    let currentY = 0;
+    let currentW = 0;
+    let currentH = 0;
+
+    // Interaction Modes: 'idle' | 'drawing' | 'selected' | 'resizing' | 'moving'
+    let mode = 'idle';
+    let activeHandle = null;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let boxStartX = 0;
+    let boxStartY = 0;
+    let boxStartW = 0;
+    let boxStartH = 0;
+
+    function updateBoxUI() {
+      // Ensure positive width & height
+      if (currentW < 40) currentW = 40;
+      if (currentH < 40) currentH = 40;
+
+      // Keep inside screen
+      if (currentX < 0) currentX = 0;
+      if (currentY < 0) currentY = 0;
+      if (currentX + currentW > window.innerWidth) currentX = window.innerWidth - currentW;
+      if (currentY + currentH > window.innerHeight) currentY = window.innerHeight - currentH;
+
+      box.style.left = `${Math.round(currentX)}px`;
+      box.style.top = `${Math.round(currentY)}px`;
+      box.style.width = `${Math.round(currentW)}px`;
+      box.style.height = `${Math.round(currentH)}px`;
+      box.style.display = 'block';
+
+      badge.textContent = `${Math.round(currentW)} × ${Math.round(currentH)} px`;
+
+      // Position action bar above if near bottom edge
+      if (currentY + currentH + 60 > window.innerHeight) {
+        actionBar.style.bottom = 'auto';
+        actionBar.style.top = '-52px';
+      } else {
+        actionBar.style.top = 'auto';
+        actionBar.style.bottom = '-52px';
+      }
+
+      // Position dimension badge
+      if (currentY < 40) {
+        badge.style.top = '6px';
+        badge.style.left = '6px';
+      } else {
+        badge.style.top = '-34px';
+        badge.style.left = '0px';
+      }
+    }
+
+    function showHandlesAndActions() {
+      handles.forEach(h => h.style.display = 'block');
+      actionBar.style.display = 'flex';
+      instructionText.textContent = '✨ Drag handles to resize • Drag inside to move • Enter to confirm';
+    }
+
+    function hideHandlesAndActions() {
+      handles.forEach(h => h.style.display = 'none');
+      actionBar.style.display = 'none';
+      instructionText.textContent = '📐 Click & Drag to select recording area';
+    }
+
+    function confirmSelection() {
+      if (currentW >= 40 && currentH >= 40) {
+        if (window.electronAPI) {
+          window.electronAPI.sendRegionSelected({
+            x: Math.round(currentX * window.devicePixelRatio),
+            y: Math.round(currentY * window.devicePixelRatio),
+            width: Math.round(currentW * window.devicePixelRatio),
+            height: Math.round(currentH * window.devicePixelRatio)
+          });
+        }
+      }
+    }
+
+    function cancelSelection() {
+      if (window.electronAPI) {
+        window.electronAPI.cancelRegionSelector();
+      }
+    }
+
+    function resetToRedraw() {
+      mode = 'idle';
+      hideHandlesAndActions();
+      box.style.display = 'none';
+      currentW = 0;
+      currentH = 0;
+      instructionText.textContent = '📐 Click & Drag to select recording area';
+    }
+
+    // Button Listeners
+    btnConfirm.addEventListener('click', (e) => {
+      e.stopPropagation();
+      confirmSelection();
+    });
+
+    btnRedraw.addEventListener('click', (e) => {
+      e.stopPropagation();
+      resetToRedraw();
+    });
+
+    btnCancel.addEventListener('click', (e) => {
+      e.stopPropagation();
+      cancelSelection();
+    });
+
+    // Resize Handles Dragging
+    handles.forEach(handle => {
+      handle.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        mode = 'resizing';
+        activeHandle = handle.dataset.handle;
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        boxStartX = currentX;
+        boxStartY = currentY;
+        boxStartW = currentW;
+        boxStartH = currentH;
+        box.classList.add('resizing');
+      });
+    });
+
+    // Box Interior Moving (Click & Drag inside to reposition)
+    box.addEventListener('mousedown', (e) => {
+      // Ignore if clicking on buttons or handles
+      if (e.target.closest('#box-action-bar') || e.target.classList.contains('resize-handle')) {
+        return;
+      }
+      if (mode === 'selected') {
+        mode = 'moving';
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        boxStartX = currentX;
+        boxStartY = currentY;
+      }
+    });
+
+    // Double click box to confirm immediately
+    box.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      confirmSelection();
+    });
+
+    // Global Mouse Events
     window.addEventListener('mousedown', (e) => {
-      isSelecting = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      box.style.left = startX + 'px';
-      box.style.top = startY + 'px';
+      // If clicking inside box or action bar in selected mode, ignore
+      if (e.target.closest('#selection-box')) {
+        return;
+      }
+
+      // Start fresh drawing
+      mode = 'drawing';
+      hideHandlesAndActions();
+      boxStartX = e.clientX;
+      boxStartY = e.clientY;
+      currentX = boxStartX;
+      currentY = boxStartY;
+      currentW = 0;
+      currentH = 0;
+      box.style.left = `${currentX}px`;
+      box.style.top = `${currentY}px`;
       box.style.width = '0px';
       box.style.height = '0px';
       box.style.display = 'block';
     });
 
     window.addEventListener('mousemove', (e) => {
-      if (!isSelecting) return;
+      if (mode === 'drawing') {
+        const x1 = Math.min(boxStartX, e.clientX);
+        const y1 = Math.min(boxStartY, e.clientY);
+        const x2 = Math.max(boxStartX, e.clientX);
+        const y2 = Math.max(boxStartY, e.clientY);
 
-      const currentX = e.clientX;
-      const currentY = e.clientY;
+        currentX = x1;
+        currentY = y1;
+        currentW = x2 - x1;
+        currentH = y2 - y1;
 
-      const width = Math.abs(currentX - startX);
-      const height = Math.abs(currentY - startY);
-      const left = Math.min(startX, currentX);
-      const top = Math.min(startY, currentY);
+        box.style.left = `${currentX}px`;
+        box.style.top = `${currentY}px`;
+        box.style.width = `${currentW}px`;
+        box.style.height = `${currentH}px`;
+        badge.textContent = `${Math.round(currentW)} × ${Math.round(currentH)} px`;
+      } 
+      else if (mode === 'resizing') {
+        const dx = e.clientX - dragStartX;
+        const dy = e.clientY - dragStartY;
 
-      box.style.left = left + 'px';
-      box.style.top = top + 'px';
-      box.style.width = width + 'px';
-      box.style.height = height + 'px';
+        let newX = boxStartX;
+        let newY = boxStartY;
+        let newW = boxStartW;
+        let newH = boxStartH;
 
-      badge.textContent = `${width} × ${height} px`;
-    });
-
-    window.addEventListener('mouseup', (e) => {
-      if (!isSelecting) return;
-      isSelecting = false;
-
-      const currentX = e.clientX;
-      const currentY = e.clientY;
-      const width = Math.abs(currentX - startX);
-      const height = Math.abs(currentY - startY);
-      const left = Math.min(startX, currentX);
-      const top = Math.min(startY, currentY);
-
-      if (width > 40 && height > 40) {
-        if (window.electronAPI) {
-          window.electronAPI.sendRegionSelected({
-            x: Math.round(left * window.devicePixelRatio),
-            y: Math.round(top * window.devicePixelRatio),
-            width: Math.round(width * window.devicePixelRatio),
-            height: Math.round(height * window.devicePixelRatio)
-          });
+        if (activeHandle.includes('e')) {
+          newW = Math.max(40, boxStartW + dx);
         }
-      } else {
-        // If user just clicked without dragging, cancel and close immediately!
-        if (window.electronAPI) {
-          window.electronAPI.cancelRegionSelector();
+        if (activeHandle.includes('s')) {
+          newH = Math.max(40, boxStartH + dy);
         }
+        if (activeHandle.includes('w')) {
+          const potentialW = boxStartW - dx;
+          if (potentialW >= 40) {
+            newW = potentialW;
+            newX = boxStartX + dx;
+          }
+        }
+        if (activeHandle.includes('n')) {
+          const potentialH = boxStartH - dy;
+          if (potentialH >= 40) {
+            newH = potentialH;
+            newY = boxStartY + dy;
+          }
+        }
+
+        currentX = newX;
+        currentY = newY;
+        currentW = newW;
+        currentH = newH;
+        updateBoxUI();
+      }
+      else if (mode === 'moving') {
+        const dx = e.clientX - dragStartX;
+        const dy = e.clientY - dragStartY;
+
+        currentX = boxStartX + dx;
+        currentY = boxStartY + dy;
+        updateBoxUI();
       }
     });
 
+    window.addEventListener('mouseup', (e) => {
+      if (mode === 'drawing') {
+        if (currentW >= 40 && currentH >= 40) {
+          mode = 'selected';
+          updateBoxUI();
+          showHandlesAndActions();
+        } else {
+          // Just clicked without dragging -> cancel
+          cancelSelection();
+        }
+      } 
+      else if (mode === 'resizing') {
+        mode = 'selected';
+        box.classList.remove('resizing');
+        updateBoxUI();
+      } 
+      else if (mode === 'moving') {
+        mode = 'selected';
+        updateBoxUI();
+      }
+    });
+
+    // Keyboard Shortcuts
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        if (window.electronAPI) {
-          window.electronAPI.cancelRegionSelector();
+        cancelSelection();
+      } else if (e.key === 'Enter') {
+        if (mode === 'selected' || (currentW >= 40 && currentH >= 40)) {
+          confirmSelection();
         }
       }
     });

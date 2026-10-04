@@ -228,8 +228,11 @@ function hideCropBorder() {
 
 // Fixed-Size Floating Movable Camera Overlay
 function openCameraOverlay(shape = 'circle', size = 190, deviceId = '', deviceLabel = '') {
-  if (cameraOverlayWindow) {
+  if (cameraOverlayWindow && !cameraOverlayWindow.isDestroyed()) {
     cameraOverlayWindow.show();
+    try {
+      cameraOverlayWindow.setAlwaysOnTop(true, 'screen-saver');
+    } catch (e) {}
     cameraOverlayWindow.webContents.send('update-cam-settings', { shape, size, deviceId, deviceLabel });
     return;
   }
@@ -248,6 +251,7 @@ function openCameraOverlay(shape = 'circle', size = 190, deviceId = '', deviceLa
     alwaysOnTop: true,
     resizable: false,
     hasShadow: false,
+    skipTaskbar: false,
     icon: appIcon || appIconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -257,10 +261,17 @@ function openCameraOverlay(shape = 'circle', size = 190, deviceId = '', deviceLa
     }
   });
 
+  try {
+    cameraOverlayWindow.setAlwaysOnTop(true, 'screen-saver');
+    cameraOverlayWindow.setVisibleOnAllWorkspaces(true);
+  } catch (e) {}
+
   cameraOverlayWindow.loadFile(path.join(__dirname, 'src', 'overlays', 'camera-overlay.html'));
 
   cameraOverlayWindow.webContents.on('did-finish-load', () => {
-    cameraOverlayWindow.webContents.send('init-cam-settings', { shape, size, deviceId, deviceLabel });
+    if (cameraOverlayWindow && !cameraOverlayWindow.isDestroyed()) {
+      cameraOverlayWindow.webContents.send('init-cam-settings', { shape, size, deviceId, deviceLabel });
+    }
   });
 
   cameraOverlayWindow.on('closed', () => {
@@ -451,12 +462,16 @@ ipcMain.on('hide-crop-border', () => {
 });
 
 // Camera Overlay Controls
-ipcMain.on('open-camera-overlay', (event, { shape, size, deviceId, deviceLabel }) => {
+ipcMain.on('open-camera-overlay', (event, options = {}) => {
+  const shape = options?.shape || 'circle';
+  const size = options?.size || 190;
+  const deviceId = options?.deviceId || '';
+  const deviceLabel = options?.deviceLabel || '';
   openCameraOverlay(shape, size, deviceId, deviceLabel);
 });
 
 ipcMain.on('close-camera-overlay', () => {
-  if (cameraOverlayWindow) {
+  if (cameraOverlayWindow && !cameraOverlayWindow.isDestroyed()) {
     try {
       cameraOverlayWindow.webContents.send('stop-cam-feed');
       cameraOverlayWindow.destroy();

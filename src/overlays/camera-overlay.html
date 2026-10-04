@@ -319,9 +319,10 @@
         isFlipped = !!flipped;
         applyFlip();
       });
-    } else {
-      initCamera();
     }
+
+    // Always ensure camera feed starts immediately on load
+    initCamera();
 
   </script>
 </body>
